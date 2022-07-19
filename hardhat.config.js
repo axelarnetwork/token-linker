@@ -32,6 +32,6 @@ module.exports = {
         sources: "./contracts",
     },
     mocha: {
-        timeout: 100000
+        timeout: 1000000
     },
 };

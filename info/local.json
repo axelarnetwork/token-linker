@@ -8,8 +8,8 @@
     "rpc": "http://localhost:8500/0",
     "tokenName": "Ether",
     "tokenSymbol": "ETH",
-    "token": "0x55c6f2Abd05D849C6175cE6026F5b7e86863f409",
-    "tokenLinker": "0xd4e9Ef0b9A16Da5E07032E0682c7009F08682658"
+    "token": "0x775C53cd1F4c36ac74Cb4Aa1a3CA1508e9C4Bd24",
+    "tokenLinker": "0x58d5D7308f668Ca6e922c33d86FdFBcEc9e313a9"
   },
   {
     "name": "Avalanche",
@@ -20,8 +20,8 @@
     "rpc": "http://localhost:8500/1",
     "tokenName": "Avax",
     "tokenSymbol": "AVAX",
-    "token": "0xBa874941f4362482FD76d53941816B1c873E95aB",
-    "tokenLinker": "0xd4e9Ef0b9A16Da5E07032E0682c7009F08682658"
+    "token": "0x55c6f2Abd05D849C6175cE6026F5b7e86863f409",
+    "tokenLinker": "0x58d5D7308f668Ca6e922c33d86FdFBcEc9e313a9"
   },
   {
     "name": "Subnet",
@@ -33,7 +33,7 @@
     "rpc": "http://localhost:8500/2",
     "tokenName": "Sunbet Token",
     "tokenSymbol": "ST",
-    "tokenLinker": "0xd4e9Ef0b9A16Da5E07032E0682c7009F08682658",
-    "token": "0xF8f92930AD2C4d627a96819E67aD3BcD95b5E063"
+    "tokenLinker": "0x58d5D7308f668Ca6e922c33d86FdFBcEc9e313a9",
+    "token": "0xb68231ECC3F3018A1D2488Ad3f10ab1474A095A0"
   }
 ]
