@@ -7,7 +7,8 @@
     "test": "npx hardhat test",
     "build": "rm -rf artifacts && npx hardhat compile",
     "lint": "solhint 'contracts/**/*.sol' && eslint 'scripts/**/*.js'",
-    "prettier": "prettier --write 'contracts/**/*.sol' 'scripts/**/*.js'"
+    "prettier": "prettier --write 'contracts/**/*.sol' 'scripts/**/*.js'",
+    "flatten": "sh scripts/flatten-contracts.sh"
   },
   "keywords": [],
   "author": "",
