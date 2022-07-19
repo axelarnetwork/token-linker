@@ -11,4 +11,4 @@ const chains = require(`../info/${env}.json`);
 
 deployConstAddressDeployer(env, chains).then(() => {
     setJSON(chains, `./info/${env}.json`);
-})
+});

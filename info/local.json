@@ -9,7 +9,7 @@
     "tokenName": "Ether",
     "tokenSymbol": "ETH",
     "token": "0x775C53cd1F4c36ac74Cb4Aa1a3CA1508e9C4Bd24",
-    "tokenLinker": "0x58d5D7308f668Ca6e922c33d86FdFBcEc9e313a9"
+    "tokenLinker": "0xE10A08B4CA323dC016b70F56500cA7F30E6897c0"
   },
   {
     "name": "Avalanche",
@@ -21,7 +21,7 @@
     "tokenName": "Avax",
     "tokenSymbol": "AVAX",
     "token": "0x55c6f2Abd05D849C6175cE6026F5b7e86863f409",
-    "tokenLinker": "0x58d5D7308f668Ca6e922c33d86FdFBcEc9e313a9"
+    "tokenLinker": "0xE10A08B4CA323dC016b70F56500cA7F30E6897c0"
   },
   {
     "name": "Subnet",
@@ -33,7 +33,7 @@
     "rpc": "http://localhost:8500/2",
     "tokenName": "Sunbet Token",
     "tokenSymbol": "ST",
-    "tokenLinker": "0x58d5D7308f668Ca6e922c33d86FdFBcEc9e313a9",
+    "tokenLinker": "0xE10A08B4CA323dC016b70F56500cA7F30E6897c0",
     "token": "0xb68231ECC3F3018A1D2488Ad3f10ab1474A095A0"
   }
 ]

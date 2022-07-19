@@ -1,3 +1,3 @@
-const { createSubnet } = require(".");
+const { createSubnet } = require('.');
 
 createSubnet();

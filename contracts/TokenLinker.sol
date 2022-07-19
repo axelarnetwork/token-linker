@@ -5,13 +5,13 @@ pragma solidity 0.8.9;
 import { AxelarExecutable } from '@axelar-network/axelar-utils-solidity/contracts/executables/AxelarExecutable.sol';
 import { StringToAddress, AddressToString } from '@axelar-network/axelar-utils-solidity/contracts/StringAddressUtils.sol';
 import { Upgradable } from '@axelar-network/axelar-utils-solidity/contracts/upgradables/Upgradable.sol';
-import { IAxelarGateway } from '@axelar-network/axelar-utils-solidity/contracts/interfaces/IAxelarGateway.sol'; 
+import { IAxelarGateway } from '@axelar-network/axelar-utils-solidity/contracts/interfaces/IAxelarGateway.sol';
 import { IAxelarGasService } from '@axelar-network/axelar-cgp-solidity/contracts/interfaces/IAxelarGasService.sol';
 
 abstract contract TokenLinker is AxelarExecutable, Upgradable {
     using StringToAddress for string;
     using AddressToString for address;
-    
+
     IAxelarGasService public immutable gasService;
     address public immutable gatewayAddress;
 
@@ -38,7 +38,7 @@ abstract contract TokenLinker is AxelarExecutable, Upgradable {
         bytes memory payload = abi.encode(to, amount);
         uint256 gasValue = _lockNative() ? msg.value - amount : msg.value;
         if (gasValue > 0) {
-            gasService.payNativeGasForContractCall{value: gasValue}(address(this), destinationChain, thisAddress, payload, msg.sender);
+            gasService.payNativeGasForContractCall{ value: gasValue }(address(this), destinationChain, thisAddress, payload, msg.sender);
         }
         gateway().callContract(destinationChain, address(this).toString(), payload);
     }
@@ -51,7 +51,7 @@ abstract contract TokenLinker is AxelarExecutable, Upgradable {
         if (sourceAddress.toAddress() != address(this)) return;
         (address recipient, uint256 amount) = abi.decode(payload, (address, uint256));
         _giveToken(recipient, amount);
-    }    
+    }
 
     function _lockNative() internal pure virtual returns (bool) {
         return false;
