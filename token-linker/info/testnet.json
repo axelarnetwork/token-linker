@@ -1,0 +1,64 @@
+[
+  {
+    "name": "Ethereum",
+    "chainId": 3,
+    "rpc": "https://ropsten.infura.io/v3/a4812158fbab4a2aaa849e6f4a6dc605",
+    "gateway": "0xBC6fcce7c5487d43830a219CA6E7B83238B41e71",
+    "gasReceiver": "0xbE406F0189A0B4cf3A05C286473D23791Dd44Cc6",
+    "constAddressDeployer": "0xd6FEbad300581B6eEf3dcCba725D0b93e8640c18",
+    "tokenName": "Ether",
+    "tokenSymbol": "ETH"
+  },
+  {
+    "name": "Avalanche",
+    "chainId": 43113,
+    "rpc": "https://api.avax-test.network/ext/bc/C/rpc",
+    "gateway": "0xC249632c2D40b9001FE907806902f63038B737Ab",
+    "gasReceiver": "0xbE406F0189A0B4cf3A05C286473D23791Dd44Cc6",
+    "constAddressDeployer": "0xd6FEbad300581B6eEf3dcCba725D0b93e8640c18",
+    "tokenName": "Avax",
+    "tokenSymbol": "AVAX",
+    "token": "0xC155E918c5aBBa6B020010a253981B2Cbd9e4844"
+  },
+  {
+    "name": "Fantom",
+    "chainId": 4002,
+    "gateway": "0x97837985Ec0494E7b9C71f5D3f9250188477ae14",
+    "rpc": "https://rpc.testnet.fantom.network",
+    "gasReceiver": "0xbE406F0189A0B4cf3A05C286473D23791Dd44Cc6",
+    "constAddressDeployer": "0xd6FEbad300581B6eEf3dcCba725D0b93e8640c18",
+    "tokenName": "Fantom",
+    "tokenSymbol": "FTM"
+  },
+  {
+    "name": "Polygon",
+    "chainId": 80001,
+    "gateway": "0xBF62ef1486468a6bd26Dd669C06db43dEd5B849B",
+    "rpc": "https://polygon-mumbai.g.alchemy.com/v2/Ksd4J1QVWaOJAJJNbr_nzTcJBJU-6uP3",
+    "gasReceiver": "0xbE406F0189A0B4cf3A05C286473D23791Dd44Cc6",
+    "constAddressDeployer": "0xd6FEbad300581B6eEf3dcCba725D0b93e8640c18",
+    "tokenName": "Matic",
+    "tokenSymbol": "MATIC"
+  },
+  {
+    "name": "Moonbeam",
+    "chainId": 1287,
+    "gateway": "0x5769D84DD62a6fD969856c75c7D321b84d455929",
+    "rpc": "https://moonbeam-alpha.api.onfinality.io/public",
+    "gasReceiver": "0xbE406F0189A0B4cf3A05C286473D23791Dd44Cc6",
+    "constAddressDeployer": "0xd6FEbad300581B6eEf3dcCba725D0b93e8640c18",
+    "tokenName": "DEV",
+    "tokenSymbol": "DEV"
+  },
+  {
+    "name": "Subnet",
+    "chainId": 2500,
+    "gateway": "0x21c54A49F03F3d2FbF60e53b0761A52564597af9",
+    "gasReceiver": "0xA402Ece04dDb9E79702c8f8BaeEBd398c7ef88bc",
+    "constAddressDeployer": "0xd6FEbad300581B6eEf3dcCba725D0b93e8640c18",
+    "tokens": {},
+    "rpc": "http://localhost:8501",
+    "tokenName": "Sunbet Token",
+    "tokenSymbol": "ST"
+  }
+]

@@ -1,0 +1,3 @@
+const { createSubnet } = require(".");
+
+createSubnet();

@@ -1,0 +1,39 @@
+[
+  {
+    "name": "Ethereum",
+    "chainId": 3,
+    "gateway": "0xBC6fcce7c5487d43830a219CA6E7B83238B41e71",
+    "gasReceiver": "0xbE406F0189A0B4cf3A05C286473D23791Dd44Cc6",
+    "constAddressDeployer": "0xd6FEbad300581B6eEf3dcCba725D0b93e8640c18",
+    "rpc": "http://localhost:8500/0",
+    "tokenName": "Ether",
+    "tokenSymbol": "ETH",
+    "token": "0x55c6f2Abd05D849C6175cE6026F5b7e86863f409",
+    "tokenLinker": "0x969063a6f632A0eCdF5c9844356b0fA4dB9046AB"
+  },
+  {
+    "name": "Avalanche",
+    "chainId": 43113,
+    "gateway": "0xC249632c2D40b9001FE907806902f63038B737Ab",
+    "gasReceiver": "0xbE406F0189A0B4cf3A05C286473D23791Dd44Cc6",
+    "constAddressDeployer": "0xd6FEbad300581B6eEf3dcCba725D0b93e8640c18",
+    "rpc": "http://localhost:8500/1",
+    "tokenName": "Avax",
+    "tokenSymbol": "AVAX",
+    "token": "0xBa874941f4362482FD76d53941816B1c873E95aB",
+    "tokenLinker": "0x969063a6f632A0eCdF5c9844356b0fA4dB9046AB"
+  },
+  {
+    "name": "Subnet",
+    "chainId": 2500,
+    "gateway": "0x21c54A49F03F3d2FbF60e53b0761A52564597af9",
+    "gasReceiver": "0xA402Ece04dDb9E79702c8f8BaeEBd398c7ef88bc",
+    "constAddressDeployer": "0xd6FEbad300581B6eEf3dcCba725D0b93e8640c18",
+    "tokens": {},
+    "rpc": "http://localhost:8500/2",
+    "tokenName": "Sunbet Token",
+    "tokenSymbol": "ST",
+    "tokenLinker": "0x969063a6f632A0eCdF5c9844356b0fA4dB9046AB",
+    "token": "0xF8f92930AD2C4d627a96819E67aD3BcD95b5E063"
+  }
+]

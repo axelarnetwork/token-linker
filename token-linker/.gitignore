@@ -1,0 +1,4 @@
+node_modules
+artifacts
+./info/local.json
+cache
