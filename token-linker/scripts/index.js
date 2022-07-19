@@ -7,10 +7,10 @@ const axios = require('axios');
 
 const ERC20MintableBurnable = require('../artifacts/@axelar-network//axelar-utils-solidity/contracts/test/ERC20MintableBurnable.sol/ERC20MintableBurnable.json');
 const TokenLinkerProxy = require('../artifacts/@axelar-network/axelar-utils-solidity/contracts/token-linking/TokenLinkerProxy.sol/TokenLinkerProxy.json');
-const TokenLinkerNative = require('../artifacts/contracts/TokenLinkerNativeImplementation.sol/TokenLinkerNativeImplementation.json');
-const TokenLinkerLockUnlock = require('../artifacts/contracts/TokenLinkerLockUnlockImplementation.sol/TokenLinkerLockUnlockImplementation.json');
-const TokenLinkerMintBurn = require('../artifacts/contracts/TokenLinkerMintBurnImplementation.sol/TokenLinkerMintBurnImplementation.json');
-const TokenLinkerSender = require('../artifacts/contracts/TokenLinkerSender.sol/TokenLinkerSender.json');
+const TokenLinkerNative = require('../artifacts/contracts/TokenLinkerNative.sol/TokenLinkerNative.json');
+const TokenLinkerLockUnlock = require('../artifacts/contracts/TokenLinkerLockUnlock.sol/TokenLinkerLockUnlock.json');
+const TokenLinkerMintBurn = require('../artifacts/contracts/TokenLinkerMintBurn.sol/TokenLinkerMintBurn.json');
+const TokenLinker = require('../artifacts/contracts/TokenLinker.sol/TokenLinker.json');
 const ConstAddressDeployer = require('@axelar-network/axelar-utils-solidity/dist/ConstAddressDeployer.json');
 
 const deployer_private_key = keccak256(toUtf8Bytes(`constAddressDeployer deployer key`));
@@ -217,7 +217,7 @@ async function getGasPrice(env, source, destination, tokenAddress) {
 
 async function sendToken(fromChain, toChain, to, amount, gasPrice) {
     const wallet = getWallet(fromChain);
-    const tokenLinker = new Contract(fromChain.tokenLinker, TokenLinkerSender.abi, wallet);
+    const tokenLinker = new Contract(fromChain.tokenLinker, TokenLinker.abi, wallet);
     
     const getBalance = async() => {
         const providerTo = getDefaultProvider(toChain.rpc);
