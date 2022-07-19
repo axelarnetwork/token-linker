@@ -6,34 +6,38 @@ const { deployTokenLinker, mint, getWallet, fundTokenLinker, sendToken } = requi
 const { expect } = chai;
 
 const ERC20MintableBurnable = require('../artifacts/@axelar-network//axelar-utils-solidity/contracts/test/ERC20MintableBurnable.sol/ERC20MintableBurnable.json');
-const { keccak256, toUtf8Bytes } = require('ethers/lib/utils');
+const { keccak256, toUtf8Bytes, defaultAbiCoder } = require('ethers/lib/utils');
 const { setJSON } = require('@axelar-network/axelar-local-dev/dist/utils');
+const { createSubnet, fork } = require("../scripts/index");
 
 let chains;
-try {
-    chains = require('../info/local.json');
-} catch(e) {
-    console.log(e);
-    throw new Error('Should fork before testing.');
-}
-const avalanche = chains.find((chain) => chain.name == 'Avalanche');
-const subnet = chains.find((chain) => chain.name == 'Subnet');
-const other = chains.find((chain) => chain.name != 'Subnet' && chain.name != 'Avalanche');
+let avalanche;
+let subnet;
+let other;
+
 
 describe('Token Linker', () => {
     before(async () => {
-        let toDeploy = false;
-        try {
-            for(const chain in chains) {
-                const provider = getDefaultProvider(chain.rpc);
-                const n = await provider.getBlockNumber();
-                if(!chain.tokenLinker) toDeploy = true;
-            }
-        } catch(e) {
-            console.log(e);
-            throw new Error('Should fork before testing.');
-        }
-        if(toDeploy) await deployTokenLinker(chains, new Date().getTime().toString());
+        await createSubnet();
+
+        const testnet = require('../info/testnet.json');
+        const deployer_key = keccak256(
+            defaultAbiCoder.encode(
+                ['string'],
+                ['this is a random string to get a random account. You need to provide the private key for a funded account here.'],
+            ),
+        );
+        const deployer_address = new Wallet(deployer_key).address;
+        const toFund = [deployer_address];
+        const chainsToFork = ['Subnet', 'Avalanche', 'Ethereum'];
+        await fork(testnet, toFund, chainsToFork);
+    
+        chains = require('../info/local.json');
+        avalanche = chains.find((chain) => chain.name == 'Avalanche');
+        subnet = chains.find((chain) => chain.name == 'Subnet');
+        other = chains.find((chain) => chain.name != 'Subnet' && chain.name != 'Avalanche');
+
+        await deployTokenLinker(chains, new Date().getTime().toString());
         setJSON(chains, './info/local.json');
     });
 

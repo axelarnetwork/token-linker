@@ -11,14 +11,16 @@ contract TokenLinkerLockUnlock is TokenLinker {
 
     address public immutable tokenAddress;
 
-    constructor(address gatewayAddress_, address gasServiceAddress_,address tokenAddress_) TokenLinker(gatewayAddress_, gasServiceAddress_) {
+    constructor(
+        address gatewayAddress_,
+        address gasServiceAddress_,
+        address tokenAddress_
+    ) TokenLinker(gatewayAddress_, gasServiceAddress_) {
         tokenAddress = tokenAddress_;
     }
 
     function _giveToken(address to, uint256 amount) internal override {
-        (bool success, bytes memory returnData) = tokenAddress.call(
-            abi.encodeWithSelector(IERC20.transfer.selector, to, amount)
-        );
+        (bool success, bytes memory returnData) = tokenAddress.call(abi.encodeWithSelector(IERC20.transfer.selector, to, amount));
         bool transferred = success && (returnData.length == uint256(0) || abi.decode(returnData, (bool)));
 
         if (!transferred || tokenAddress.code.length == 0) revert TransferFailed();
