@@ -1,4 +1,9 @@
-const { Contract, getDefaultProvider, Wallet, constants: { AddressZero } } = require('ethers');
+const {
+    Contract,
+    getDefaultProvider,
+    Wallet,
+    constants: { AddressZero },
+} = require('ethers');
 const { deployUpgradable, upgradeUpgradable } = require('@axelar-network/axelar-utils-solidity');
 const { createNetwork, forkAndExport } = require('@axelar-network/axelar-local-dev');
 const { keccak256, defaultAbiCoder, toUtf8Bytes } = require('ethers/lib/utils');
@@ -29,7 +34,7 @@ const tokenLinkers = {
     Other: {
         name: 'Mint/Burn',
         contractJson: TokenLinkerMintBurn,
-        setupData: defaultAbiCoder.encode(['string', 'string'], ['Subnet Token', 'ST'])
+        setupData: defaultAbiCoder.encode(['string', 'string'], ['Subnet Token', 'ST']),
     },
 };
 
