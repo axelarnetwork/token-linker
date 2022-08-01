@@ -2,38 +2,28 @@
 
 pragma solidity 0.8.9;
 
-import { IERC20MintableBurnable } from '@axelar-network/axelar-utils-solidity/contracts/interfaces/IERC20MintableBurnable.sol';
 import { TokenLinker } from './TokenLinker.sol';
+import { ERC20 } from '@axelar-network/axelar-cgp-solidity/contracts/ERC20.sol';
 
-contract TokenLinkerMintBurn is TokenLinker {
+contract TokenLinkerMintBurn is TokenLinker, ERC20 {
     error MintFailed();
     error BurnFailed();
-
-    address public immutable tokenAddress;
 
     constructor(
         address gatewayAddress_,
         address gasServiceAddress_,
-        address tokenAddress_
-    ) TokenLinker(gatewayAddress_, gasServiceAddress_) {
-        tokenAddress = tokenAddress_;
+        uint8 decimals_
+    ) TokenLinker(gatewayAddress_, gasServiceAddress_) ERC20('', '', decimals_) {}
+
+    function _setup(bytes calldata data) internal override {
+        (name, symbol) = abi.decode(data, (string, string));
     }
 
     function _giveToken(address to, uint256 amount) internal override {
-        (bool success, bytes memory returnData) = tokenAddress.call(
-            abi.encodeWithSelector(IERC20MintableBurnable.mint.selector, to, amount)
-        );
-        bool transferred = success && (returnData.length == uint256(0) || abi.decode(returnData, (bool)));
-
-        if (!transferred || tokenAddress.code.length == 0) revert MintFailed();
+        _mint(to, amount);
     }
 
     function _takeToken(address from, uint256 amount) internal override {
-        (bool success, bytes memory returnData) = tokenAddress.call(
-            abi.encodeWithSelector(IERC20MintableBurnable.burn.selector, from, amount)
-        );
-        bool transferred = success && (returnData.length == uint256(0) || abi.decode(returnData, (bool)));
-
-        if (!transferred || tokenAddress.code.length == 0) revert('BurnFailed()');
+        _burn(from, amount);
     }
 }
