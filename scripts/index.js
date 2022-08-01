@@ -1,4 +1,9 @@
-const { Contract, getDefaultProvider, Wallet, constants: { AddressZero } } = require('ethers');
+const {
+    Contract,
+    getDefaultProvider,
+    Wallet,
+    constants: { AddressZero },
+} = require('ethers');
 const { deployUpgradable, upgradeUpgradable } = require('@axelar-network/axelar-utils-solidity');
 const { createNetwork, forkAndExport } = require('@axelar-network/axelar-local-dev');
 const { keccak256, defaultAbiCoder, toUtf8Bytes } = require('ethers/lib/utils');
@@ -19,14 +24,17 @@ const tokenLinkers = {
     Subnet: {
         name: 'Native',
         contractJson: TokenLinkerNative,
+        setupData: '0x',
     },
     Avalanche: {
         name: 'Lock/Unlock',
         contractJson: TokenLinkerLockUnlock,
+        setupData: '0x',
     },
     Other: {
         name: 'Mint/Burn',
         contractJson: TokenLinkerMintBurn,
+        setupData: defaultAbiCoder.encode(['string', 'string'], ['Subnet Token', 'ST']),
     },
 };
 
@@ -96,14 +104,17 @@ async function deployTokenLinker(chains, key = 'token-linker') {
         const name = tokenLinkers[chain.name] ? chain.name : 'Other';
         console.log(`Deploying a ${tokenLinkers[name].name} token linker for ${chain.name}`);
         const implContractJson = tokenLinkers[name].contractJson;
+        const setupData = tokenLinkers[name].setupData;
         const args = [chain.gateway, chain.gasReceiver];
 
-        if (name !== 'Subnet') {
+        if (name === 'Avalanche') {
             if (!chain.token) {
                 await deployToken(chain, wallet);
             }
 
             args.push(chain.token);
+        } else if (name !== 'Subnet') {
+            args.push(18);
         }
 
         const contract = await deployUpgradable(
@@ -113,7 +124,7 @@ async function deployTokenLinker(chains, key = 'token-linker') {
             TokenLinkerProxy,
             args,
             [],
-            '0x',
+            setupData,
             key,
         );
         console.log(`Deployed at ${contract.address}.`);
