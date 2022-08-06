@@ -29,7 +29,7 @@ contract FactoryImplementationLookup is ImplementationLookup {
     function implementation() public view override returns (address implementation_) {
         address factoryAddress = factory();
         if(factoryAddress == address(0)) return address(0);
-        implementation_ = ITokenLinkerFactory(factoryAddress).implementations(tokenLinkerType());
+        implementation_ = ITokenLinkerFactory(factoryAddress).factoryManagedImplementations(tokenLinkerType());
     }
 
     function _setFactory(address factory_) internal {

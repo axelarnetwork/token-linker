@@ -14,9 +14,11 @@ interface ITokenLinkerFactory {
 
     event TokenLinkerDeployed(uint256 tlt, bytes32 indexed id, bytes params, bool factoryManaged, address indexed at);
 
-    function implementations(uint256 index) external view returns (address implementaionAddress);
+    function factoryManagedImplementations(uint256 index) external view returns (address implementaionAddress);
+    function upgradableImplementations(uint256 index) external view returns (address implementaionAddress);
 
-    function proxyCodehash() external view returns (bytes32);
+    function factoryManagedProxyCodehash() external view returns (bytes32);
+    function upgradableProxyCodehash() external view returns (bytes32);
 
     function getTokenLinkerId(address creator, bytes32 salt) external pure returns(bytes32 id);
 
@@ -26,7 +28,7 @@ interface ITokenLinkerFactory {
 
     function deploy(uint256 tlt, bytes32 salt, bytes calldata params, bool factoryManaged) external;
 
-    function tokenLinker(bytes32 id) external view returns (address deployedAddress_);
+    function tokenLinker(bytes32 id, bool factoryManaged) external view returns (address tokenLinkerAddress);
 
      function numberDeployed() external view returns (uint256);
 }

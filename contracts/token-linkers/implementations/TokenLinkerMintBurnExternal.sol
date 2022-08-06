@@ -2,21 +2,17 @@
 
 pragma solidity 0.8.9;
 
-import { TokenLinker } from './TokenLinker.sol';
+import { TokenLinker } from '../TokenLinker.sol';
+import { IExternalTokenReference } from '../../interfaces/IExternalTokenReference.sol';
 
-contract TokenLinkerMintBurnExternal is TokenLinker {
+abstract contract TokenLinkerMintBurnExternal is IExternalTokenReference, TokenLinker {
     error MintFailed();
     error BurnFailed();
 
-    address public tokenAddress;
+    address public override tokenAddress;
     bytes4 public mintSelector;
     bytes4 public burnSelector;
     uint256 public immutable override implementationType = 2;
-
-    constructor(
-        address gatewayAddress_,
-        address gasServiceAddress_
-    ) TokenLinker(gatewayAddress_, gasServiceAddress_) {}
 
     function _setup(bytes calldata data) internal override {
         (tokenAddress, mintSelector, burnSelector) = abi.decode(data, (address, bytes4, bytes4));

@@ -14,8 +14,4 @@ contract TokenLinkerRouter {
         factory = ITokenLinkerFactory(msg.sender);
         tokenLinkerIds = tokenLinkerIds_;
     }
-
-    function tokenLinker(uint256 i) public view returns (address) {
-        return factory.tokenLinker(tokenLinkerIds[i]);
-    }
 }

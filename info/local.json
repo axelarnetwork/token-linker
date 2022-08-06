@@ -10,7 +10,7 @@
     "tokenName": "DEV",
     "tokenSymbol": "DEV",
     "token": "0xe8014F32A38EB795BDa32E62a814bF788F42d693",
-    "factory": "0xF76B56F9Ebe3AEcD87E89c22341A9A58884f88B5"
+    "factory": "0x8F50022Fa41df392E6319Ca148Cc63D777B827A7"
   },
   {
     "name": "Avalanche",
@@ -23,7 +23,7 @@
     "tokenName": "Avax",
     "tokenSymbol": "AVAX",
     "token": "0xe8014F32A38EB795BDa32E62a814bF788F42d693",
-    "factory": "0xF76B56F9Ebe3AEcD87E89c22341A9A58884f88B5"
+    "factory": "0x8F50022Fa41df392E6319Ca148Cc63D777B827A7"
   },
   {
     "name": "Fantom",
@@ -36,7 +36,7 @@
     "tokenName": "Fantom",
     "tokenSymbol": "FTM",
     "token": "0xe8014F32A38EB795BDa32E62a814bF788F42d693",
-    "factory": "0xF76B56F9Ebe3AEcD87E89c22341A9A58884f88B5"
+    "factory": "0x8F50022Fa41df392E6319Ca148Cc63D777B827A7"
   },
   {
     "name": "Ethereum",
@@ -49,7 +49,7 @@
     "tokenName": "Ether",
     "tokenSymbol": "ETH",
     "token": "0xe8014F32A38EB795BDa32E62a814bF788F42d693",
-    "factory": "0xF76B56F9Ebe3AEcD87E89c22341A9A58884f88B5"
+    "factory": "0x8F50022Fa41df392E6319Ca148Cc63D777B827A7"
   },
   {
     "name": "Polygon",
@@ -62,6 +62,6 @@
     "tokenName": "Matic",
     "tokenSymbol": "MATIC",
     "token": "0xe8014F32A38EB795BDa32E62a814bF788F42d693",
-    "factory": "0xF76B56F9Ebe3AEcD87E89c22341A9A58884f88B5"
+    "factory": "0x8F50022Fa41df392E6319Ca148Cc63D777B827A7"
   }
 ]

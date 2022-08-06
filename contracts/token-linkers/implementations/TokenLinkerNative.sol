@@ -2,9 +2,9 @@
 
 pragma solidity 0.8.9;
 
-import { TokenLinker } from './TokenLinker.sol';
+import { TokenLinker } from '../TokenLinker.sol';
 
-contract TokenLinkerNative is TokenLinker {
+abstract contract TokenLinkerNative is TokenLinker {
     error InsufficientBalance();
     error TranferFromNativeFailed();
 
@@ -12,8 +12,6 @@ contract TokenLinkerNative is TokenLinker {
     uint256 public constant NATIVE_BALANCE_SLOT = 0x2b1b2f0e2e6377507cc7f28638bed85633f644ec5614112adcc88f3c5e87903a;
 
     uint256 public immutable override implementationType = 3;
-
-    constructor(address gatewayAddress_, address gasServiceAddress_) TokenLinker(gatewayAddress_, gasServiceAddress_) {}
 
     function getNativeBalance() public view returns (uint256 nativeBalance) {
         assembly {

@@ -9,8 +9,7 @@ const { setupLocal, deploy, deployToken } = require("../scripts/factory");
 require('dotenv').config();
 
 const ERC20MintableBurnable = require('../artifacts/@axelar-network/axelar-utils-solidity/contracts/test/ERC20MintableBurnable.sol/ERC20MintableBurnable.json');
-const TokenLinkerLockUnlock = require('../artifacts/contracts/token-linkers/TokenLinkerLockUnlock.sol/TokenLinkerLockUnlock.json');
-const TokenLinkerMintBurnExternal = require('../artifacts/contracts/token-linkers/TokenLinkerMintBurnExternal.sol/TokenLinkerMintBurnExternal.json');
+const IExternalTokenReference = require('../artifacts/contracts/interfaces/IExternalTokenReference.sol/IExternalTokenReference.json');
 const ITokenLinkerFactory = require('../artifacts/contracts/interfaces/ITokenLinkerFactory.sol/ITokenLinkerFactory.json');
 const ITokenLinker = require('../artifacts/contracts/interfaces/ITokenLinker.sol/ITokenLinker.json');
 const IERC20 = require('../artifacts/contracts/interfaces/IERC20.sol/IERC20.json');
@@ -25,14 +24,14 @@ const tokenLinkerTypes = [
         factoryRef: 'lockUnlock',
         params: (chain) => defaultAbiCoder.encode(['address'], [chain.token]),
         preSend: async (tokenLinkerAddress, amount, wallet) => {
-            const tokenLinker = new Contract(tokenLinkerAddress, TokenLinkerLockUnlock.abi, wallet);
+            const tokenLinker = new Contract(tokenLinkerAddress, IExternalTokenReference.abi, wallet);
             const tokenAddress = await tokenLinker.tokenAddress();
             const token = new Contract(tokenAddress, ERC20MintableBurnable.abi, wallet);
             await (await token.mint(wallet.address, amount)).wait();
             await (await token.approve(tokenLinkerAddress, amount)).wait();
         },
         getBalance: async(tokenLinkerAddress, address, provider) => {
-            const tokenLinker = new Contract(tokenLinkerAddress, TokenLinkerLockUnlock.abi, provider);
+            const tokenLinker = new Contract(tokenLinkerAddress, IExternalTokenReference.abi, provider);
             const tokenAddress = await tokenLinker.tokenAddress();
             const token = new Contract(tokenAddress, ERC20MintableBurnable.abi, provider);
             return await token.balanceOf(address);
@@ -65,13 +64,13 @@ const tokenLinkerTypes = [
             return defaultAbiCoder.encode(['address', 'bytes4', 'bytes4'], [contract.address, mintSelector, burnSelector]);
         },
         preSend: async (tokenLinkerAddress, amount, wallet) => {
-            const tokenLinker = new Contract(tokenLinkerAddress, TokenLinkerMintBurnExternal.abi, wallet);
+            const tokenLinker = new Contract(tokenLinkerAddress, IExternalTokenReference.abi, wallet);
             const tokenAddress = await tokenLinker.tokenAddress();
             const token = new Contract(tokenAddress, IERC20.abi, wallet);
             await (await token.approve(tokenLinkerAddress, amount)).wait();
         },
         getBalance: async(tokenLinkerAddress, address, provider) => {
-            const tokenLinker = new Contract(tokenLinkerAddress, TokenLinkerLockUnlock.abi, provider);
+            const tokenLinker = new Contract(tokenLinkerAddress, IExternalTokenReference.abi, provider);
             const tokenAddress = await tokenLinker.tokenAddress();
             const token = new Contract(tokenAddress, ERC20MintableBurnable.abi, provider);
             return await token.balanceOf(address);
@@ -103,15 +102,15 @@ async function deployTokenLinker(chain, type, factoryManaged, key = type) {
         factoryManaged,
     )).wait();
     const id = await factory.getTokenLinkerId(wallet.address, salt);
-    const address = await factory.tokenLinker(id);
+    const address = await factory.tokenLinker(id, factoryManaged);
     return new Contract(address, ITokenLinker.abi, walletConnected);
 }
 
-async function sendToken(fromChain, toChain, id, amount) {
+async function sendToken(fromChain, toChain, id, factoryManaged, amount) {
     const provider = getDefaultProvider(fromChain.rpc);
     const walletConnected = wallet.connect(provider);
     const factory = new Contract(fromChain.factory, ITokenLinkerFactory.abi, walletConnected);
-    const tokenLinkerAddress = await factory.tokenLinker(id);
+    const tokenLinkerAddress = await factory.tokenLinker(id, factoryManaged);
     const type = await factory.tokenLinkerType(id);
     const tlt = tokenLinkerTypes[type];
     if(tlt.preSend) await tlt.preSend(tokenLinkerAddress, amount, walletConnected);
@@ -154,7 +153,7 @@ describe('Token Linker Factory', () => {
                 const tl = await deployTokenLinker(chain, i, factoryManaged);
                 const contract = new Contract(tl.address, IImplementationLookup.abi, walletConnected);
                 const impl = await contract.implementation();
-                const implFromFactory = await factory.implementations(i);
+                const implFromFactory = await factory[factoryManaged ? 'factoryManagedImplementations' : 'upgradableImplementations'](i);
                 expect(impl).to.equal(implFromFactory);
             });
         }
@@ -176,8 +175,8 @@ describe('Token Linker Factory', () => {
                     const length = await factory.numberDeployed();
                     const id = await factory.tokenLinkerIds(length - 1);
 
-                    await sendToken(sourceChain, destinationChain, id, amountIn);
-                    
+                    await sendToken(sourceChain, destinationChain, id, factoryManaged, amountIn);
+
                     let getBalance = tokenLinkerTypes[destination].getBalance;
 
                     let balance = await getBalance(destinationTokenLinker.address, wallet.address, walletDestination.provider);
@@ -189,7 +188,7 @@ describe('Token Linker Factory', () => {
                     balance = await getBalance(destinationTokenLinker.address, wallet.address, walletDestination.provider) - balance;
                     expect(BigInt(balance)).to.equal(BigInt(amountIn));
 
-                    await sendToken(destinationChain, sourceChain, id, amountOut);
+                    await sendToken(destinationChain, sourceChain, id, factoryManaged, amountOut);
                     
                     getBalance = tokenLinkerTypes[source].getBalance;
 

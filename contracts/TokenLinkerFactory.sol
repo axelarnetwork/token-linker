@@ -22,43 +22,52 @@ contract TokenLinkerFactory is ITokenLinkerFactory, AxelarExecutable {
         uint256 gasAmount;
     }
 
-    address[] public override implementations;
+    address[] public override factoryManagedImplementations;
+    address[] public override upgradableImplementations;
 
     IAxelarGasService public gasService;
     address public gatewayAddress;
 
-    bytes32 public immutable proxyCodehash;
+    bytes32 public immutable factoryManagedProxyCodehash;
+    bytes32 public immutable upgradableProxyCodehash;
 
     bytes32 public constant TOKEN_LINKER_ID_SALT = bytes32(uint256(keccak256('token-linker-id-salt')) - 1);
 
     bytes32[] public override tokenLinkerIds;
     mapping(bytes32 => uint256) public override tokenLinkerType;
 
-    constructor(bytes32 proxyCodehash_) {
-        proxyCodehash = proxyCodehash_;
+    constructor(bytes32 factoryManagedProxyCodehash_, bytes32 upgradableProxyCodehash_) {
+        factoryManagedProxyCodehash = factoryManagedProxyCodehash_;
+        upgradableProxyCodehash = upgradableProxyCodehash_;
     }
 
     function init(
-        address[] memory tokenLinkerImplementations_,
         address gatewayAddress_,
-        address gasServiceAddress_
+        address gasServiceAddress_,
+        address[] memory factoryManagedImplementations_,
+        address[] memory upgradableImplementations_
     ) external {
         if(gatewayAddress != address(0)) revert AlreadyInitialized();
         if(gatewayAddress_ == address(0) || gasServiceAddress_ == address(0)) revert ZeroAddress();
         gatewayAddress = gatewayAddress_;
         gasService = IAxelarGasService(gasServiceAddress_);
-        uint256 length = tokenLinkerImplementations_.length;
+        uint256 length = factoryManagedImplementations_.length;
         for(uint256 i; i<length; ++i) {
-            address implementation = tokenLinkerImplementations_[i];
-            uint256 size;
-            assembly {
-                size := extcodesize(implementation)
-            }
-            if(size == 0) revert ImplementationIsNotContract();
-            if(ITokenLinker(implementation).implementationType() != i) revert WrongTokenLinkerType();
+            _checkImplementation(factoryManagedImplementations_[i], i);
+            _checkImplementation(upgradableImplementations_[i], i); 
         }
-        implementations = tokenLinkerImplementations_;
-    }    
+        factoryManagedImplementations = factoryManagedImplementations_;
+        upgradableImplementations = upgradableImplementations_;
+    }
+
+    function _checkImplementation(address implementation, uint256 tlt) internal view{
+        uint256 size;
+        assembly {
+            size := extcodesize(implementation)
+        }
+        if(size == 0) revert ImplementationIsNotContract();
+        if(ITokenLinker(implementation).implementationType() != tlt) revert WrongTokenLinkerType();
+    }   
 
     function gateway() public view override returns (IAxelarGateway) {
         return IAxelarGateway(gatewayAddress);
@@ -84,7 +93,7 @@ contract TokenLinkerFactory is ITokenLinkerFactory, AxelarExecutable {
         } else {
             TokenLinkerSelfLookupProxy proxy = new TokenLinkerSelfLookupProxy{salt: id}();
             proxy.init(
-                implementations[tlt],
+                upgradableImplementations[tlt],
                 params
             );
             proxyAddress = address(proxy);
@@ -133,7 +142,7 @@ contract TokenLinkerFactory is ITokenLinkerFactory, AxelarExecutable {
         }
     }
 
-    function tokenLinker(bytes32 id) public view override returns (address deployedAddress_) {
+    function _getAddress(bytes32 id, bytes32 codeHash) internal view returns (address deployedAddress_) {
         deployedAddress_ = address(
             uint160(
                 uint256(
@@ -142,12 +151,22 @@ contract TokenLinkerFactory is ITokenLinkerFactory, AxelarExecutable {
                             hex'ff',
                             address(this),
                             id,
-                            proxyCodehash // init code hash
+                            codeHash // init code hash
                         )
                     )
                 )
             )
         );
+    }
+
+    function tokenLinker(bytes32 id, bool factoryManaged) public view override returns (address tokenLinkerAddress) {
+        bytes32 codeHash;
+        if(factoryManaged) {
+            codeHash = factoryManagedProxyCodehash;
+        } else {
+            codeHash = upgradableProxyCodehash;
+        }
+        tokenLinkerAddress = _getAddress(id, codeHash);
     }
 
     function _execute(
