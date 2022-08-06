@@ -4,24 +4,23 @@ pragma solidity 0.8.9;
 
 import { AxelarExecutable } from '@axelar-network/axelar-utils-solidity/contracts/executables/AxelarExecutable.sol';
 import { StringToAddress, AddressToString } from '@axelar-network/axelar-utils-solidity/contracts/StringAddressUtils.sol';
-import { Upgradable } from '@axelar-network/axelar-utils-solidity/contracts/upgradables/Upgradable.sol';
+import { Proxied } from '../proxies/Proxied.sol';
 import { IAxelarGateway } from '@axelar-network/axelar-utils-solidity/contracts/interfaces/IAxelarGateway.sol';
 import { IAxelarGasService } from '@axelar-network/axelar-cgp-solidity/contracts/interfaces/IAxelarGasService.sol';
+import { ITokenLinker } from '../interfaces/ITokenLinker.sol';
 
-abstract contract TokenLinker is AxelarExecutable, Upgradable {
+abstract contract TokenLinker is ITokenLinker, AxelarExecutable, Proxied {
     using StringToAddress for string;
     using AddressToString for address;
 
     IAxelarGasService public immutable gasService;
     address public immutable gatewayAddress;
+    // bytes32(uint256(keccak256('token-linker')) - 1)
+    bytes32 public constant override contractId = 0x6ec6af55bf1e5f27006bfa01248d73e8894ba06f23f8002b047607ff2b1944ba;
 
     constructor(address gatewayAddress_, address gasServiceAddress_) {
         gatewayAddress = gatewayAddress_;
         gasService = IAxelarGasService(gasServiceAddress_);
-    }
-
-    function contractId() external pure override returns (bytes32) {
-        return keccak256('token-linker');
     }
 
     function gateway() public view override returns (IAxelarGateway) {
@@ -32,7 +31,7 @@ abstract contract TokenLinker is AxelarExecutable, Upgradable {
         string memory destinationChain,
         address to,
         uint256 amount
-    ) external payable {
+    ) external payable override {
         _takeToken(msg.sender, amount);
         string memory thisAddress = address(this).toString();
         bytes memory payload = abi.encode(to, amount);

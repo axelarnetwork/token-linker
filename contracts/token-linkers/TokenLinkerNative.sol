@@ -8,10 +8,12 @@ contract TokenLinkerNative is TokenLinker {
     error InsufficientBalance();
     error TranferFromNativeFailed();
 
-    constructor(address gatewayAddress_, address gasServiceAddress_) TokenLinker(gatewayAddress_, gasServiceAddress_) {}
-
     //keccak256('native_balance')
     uint256 public constant NATIVE_BALANCE_SLOT = 0x2b1b2f0e2e6377507cc7f28638bed85633f644ec5614112adcc88f3c5e87903a;
+
+    uint256 public immutable override implementationType = 3;
+
+    constructor(address gatewayAddress_, address gasServiceAddress_) TokenLinker(gatewayAddress_, gasServiceAddress_) {}
 
     function getNativeBalance() public view returns (uint256 nativeBalance) {
         assembly {
@@ -28,17 +30,21 @@ contract TokenLinkerNative is TokenLinker {
     function _giveToken(address to, uint256 amount) internal override {
         uint256 balance = getNativeBalance();
         if (balance < amount) revert('InsufficientBalance()');
-        payable(to).transfer(amount);
+        to.call{value: amount}('');
         _setNativeBalance(balance - amount);
     }
 
-    function _takeToken(
+    function _takeToken (
         address, /*from*/
         uint256 amount
     ) internal override {
         uint256 balance = getNativeBalance();
         if (balance + amount > address(this).balance) revert TranferFromNativeFailed();
         _setNativeBalance(balance + amount);
+    }
+
+    function _lockNative() internal pure override returns (bool) {
+        return true;
     }
 
     function updateBalance() external payable {
