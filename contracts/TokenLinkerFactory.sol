@@ -6,12 +6,14 @@ import { TokenLinkerFactoryLookupProxy } from './token-linkers/TokenLinkerFactor
 import { TokenLinkerSelfLookupProxy } from './token-linkers/TokenLinkerSelfLookupProxy.sol';
 import { ITokenLinkerFactory } from './interfaces/ITokenLinkerFactory.sol';
 import { ITokenLinker } from './interfaces/ITokenLinker.sol';
+import { IOwnable } from './interfaces/IOwnable.sol';
+import { Ownable } from './proxies/Ownable.sol';
 import { IAxelarGateway } from '@axelar-network/axelar-utils-solidity/contracts/interfaces/IAxelarGateway.sol';
 import { IAxelarGasService } from '@axelar-network/axelar-cgp-solidity/contracts/interfaces/IAxelarGasService.sol';
 import { AxelarExecutable } from '@axelar-network/axelar-utils-solidity/contracts/executables/AxelarExecutable.sol';
 import { StringToAddress, AddressToString } from '@axelar-network/axelar-utils-solidity/contracts/StringAddressUtils.sol';
 
-contract TokenLinkerFactory is ITokenLinkerFactory, AxelarExecutable {
+contract TokenLinkerFactory is ITokenLinkerFactory, AxelarExecutable, Ownable {
     using StringToAddress for string;
     using AddressToString for address;
 
@@ -94,6 +96,7 @@ contract TokenLinkerFactory is ITokenLinkerFactory, AxelarExecutable {
             TokenLinkerSelfLookupProxy proxy = new TokenLinkerSelfLookupProxy{salt: id}();
             proxy.init(
                 upgradableImplementations[tlt],
+                msg.sender,
                 params
             );
             proxyAddress = address(proxy);

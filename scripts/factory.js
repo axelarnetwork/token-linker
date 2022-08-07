@@ -24,17 +24,9 @@ async function setupLocal(toFund) {
         {
             chainOutputPath: './info/local.json',
             accountsToFund: toFund,
+            relayInterval: 100,
         },
     );
-}
-
-async function _deployFactoryNonConstant(wallet, chain, codehash, factoryManaged, upgradable) {
-    const factory = await deployContract(
-        wallet, 
-        TokenLinkerFactory,
-        [codehash],
-    );
-    await (await factory.init(chain.gateway, chain.gasReceiver, factoryManaged, upgradable)).wait();
 }
 
 async function deploy(chain, walletUnconnected) {

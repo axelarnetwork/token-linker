@@ -11,12 +11,11 @@ import { IUpgradable } from '../interfaces/IUpgradable.sol';
 abstract contract Upgradable is IUpgradable, SelfImplementationLookup, Ownable {
     function upgrade(
         address newImplementation,
-        bytes32 newImplementationCodeHash,
         bytes calldata params
     ) external override onlyOwner {
+        if (implementation() == address(0)) revert NotProxy();
         if (IProxied(newImplementation).contractId() != this.contractId())
             revert InvalidImplementation();
-        if (newImplementationCodeHash != newImplementation.codehash) revert InvalidCodeHash();
 
         if (params.length > 0) {
             // solhint-disable-next-line avoid-low-level-calls

@@ -23,7 +23,10 @@ abstract contract Ownable is IOwnable {
 
     function transferOwnership(address newOwner) external override onlyOwner {
         if (newOwner == address(0)) revert ZeroAddress();
+        _setOwner(newOwner);
+    }
 
+    function _setOwner(address newOwner) internal {
         emit OwnershipTransferred(newOwner);
         // solhint-disable-next-line no-inline-assembly
         assembly {

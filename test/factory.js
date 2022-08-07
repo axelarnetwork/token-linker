@@ -12,6 +12,7 @@ const ERC20MintableBurnable = require('../artifacts/@axelar-network/axelar-utils
 const IExternalTokenReference = require('../artifacts/contracts/interfaces/IExternalTokenReference.sol/IExternalTokenReference.json');
 const ITokenLinkerFactory = require('../artifacts/contracts/interfaces/ITokenLinkerFactory.sol/ITokenLinkerFactory.json');
 const ITokenLinker = require('../artifacts/contracts/interfaces/ITokenLinker.sol/ITokenLinker.json');
+const IUpgradable = require('../artifacts/contracts/interfaces/IUpgradable.sol/IUpgradable.json');
 const IERC20 = require('../artifacts/contracts/interfaces/IERC20.sol/IERC20.json');
 const IImplementationLookup = require('../artifacts/contracts/interfaces/IImplementationLookup.sol/IImplementationLookup.json');
 
@@ -132,13 +133,8 @@ describe('Token Linker Factory', () => {
         await setupLocal(toFund);
         chains = require('../info/local.json');
         for(const chain of chains) {
-            try{
-                await deployToken(chain, wallet)
-                await deploy(chain, wallet);
-            } catch (e) {
-                console.log(e);
-                throw e;
-            }
+            await deployToken(chain, wallet)
+            await deploy(chain, wallet);
         }
         setJSON(chains, './info/local.json');
     });
@@ -157,6 +153,32 @@ describe('Token Linker Factory', () => {
                 expect(impl).to.equal(implFromFactory);
             });
         }
+    }
+    for(let i=0; i<4; i++) {
+        it(`Should deploy and upgrade an Upgradable ${tokenLinkerTypes[i].name} token linker`, async () => { 
+            const chain = chains[i];
+            const provider = getDefaultProvider(chain.rpc);
+            const walletConnected = wallet.connect(provider);
+            const factory = new Contract(chain.factory, ITokenLinkerFactory.abi, walletConnected);   
+            const tl = await deployTokenLinker(chain, i, false, 'u' + i);
+            const contract = new Contract(tl.address, IImplementationLookup.abi, walletConnected);
+            const impl = await contract.implementation();
+            const implFromFactory = await factory.upgradableImplementations(i);
+            expect(impl).to.equal(implFromFactory);
+
+
+            const j = (i+1)%4;
+            const newTlt = tokenLinkerTypes[j];
+            if(newTlt.pre) await newTlt.pre(chain, walletConnected);
+            const params = await newTlt.params(chain);
+            const implAddress = await factory.upgradableImplementations(j);
+            const upgradable = new Contract(tl.address, IUpgradable.abi, walletConnected);
+            await (await upgradable.upgrade(
+                implAddress,
+                params
+            )).wait();
+            expect(Number(await tl.implementationType())).to.equal(j);
+        });
     }
     for(const factoryManaged of [true, false]) {
         for(const source of [0, 3]) {
@@ -183,7 +205,7 @@ describe('Token Linker Factory', () => {
                     await new Promise((resolve) => {
                         setTimeout(() => {
                             resolve();
-                        }, 3000);
+                        }, 300);
                     });
                     balance = await getBalance(destinationTokenLinker.address, wallet.address, walletDestination.provider) - balance;
                     expect(BigInt(balance)).to.equal(BigInt(amountIn));
@@ -196,7 +218,7 @@ describe('Token Linker Factory', () => {
                     await new Promise((resolve) => {
                         setTimeout(() => {
                             resolve();
-                        }, 3000);
+                        }, 300);
                     });
                     balance = await getBalance(sourceTokenLinker.address, wallet.address, walletSource.provider) - balance;
                     expect(BigInt(balance)).to.equal(BigInt(amountOut));

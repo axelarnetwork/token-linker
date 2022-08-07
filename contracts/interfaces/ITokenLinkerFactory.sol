@@ -9,7 +9,6 @@ interface ITokenLinkerFactory {
     error InsufficinetAmountForGas();
     error WrongSourceCaller();
     error WrongTokenLinkerType();
-    error ZeroAddress();
     error ImplementationIsNotContract();
 
     event TokenLinkerDeployed(uint256 tlt, bytes32 indexed id, bytes params, bool factoryManaged, address indexed at);

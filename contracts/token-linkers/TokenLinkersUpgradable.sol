@@ -8,6 +8,7 @@ import { TokenLinkerMintBurn } from './implementations/TokenLinkerMintBurn.sol';
 import { TokenLinkerMintBurnExternal } from './implementations/TokenLinkerMintBurnExternal.sol';
 import { TokenLinkerNative } from './implementations/TokenLinkerNative.sol';
 import { Upgradable } from '../proxies/Upgradable.sol';
+import { Ownable } from '../proxies/Ownable.sol';
 
 contract TokenLinkerLockUnlockUpgradable is TokenLinkerLockUnlock, Upgradable {
     constructor(
