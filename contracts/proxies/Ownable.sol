@@ -4,8 +4,7 @@ pragma solidity 0.8.9;
 
 import { IOwnable } from '../interfaces/IOwnable.sol';
 
-abstract contract Ownable is IOwnable { 
-
+abstract contract Ownable is IOwnable {
     // keccak256('owner')
     bytes32 internal constant _OWNER_SLOT = 0x02016836a56b71f0d02689e69e326f4f4c1b9057164ef592671cf0d37c8040c0;
 

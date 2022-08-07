@@ -10,7 +10,7 @@ abstract contract Proxied is IProxied, ImplementationLookup {
     uint256[20] private storageGap;
 
     function setup(bytes calldata data) external override {
-        if ( implementation() == address(0) ) revert NotProxy();
+        if (implementation() == address(0)) revert NotProxy();
 
         _setup(data);
     }

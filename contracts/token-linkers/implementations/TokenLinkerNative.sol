@@ -29,12 +29,12 @@ abstract contract TokenLinkerNative is TokenLinker {
     function _giveToken(address to, uint256 amount) internal override {
         uint256 balance = getNativeBalance();
         if (balance < amount) revert InsufficientBalance();
-        (bool success, ) = to.call{value: amount}('');
+        (bool success, ) = to.call{ value: amount }('');
         //if(!success) revert TransferToFailed();
         _setNativeBalance(balance - amount);
     }
 
-    function _takeToken (
+    function _takeToken(
         address, /*from*/
         uint256 amount
     ) internal override {

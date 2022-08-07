@@ -10,7 +10,7 @@ abstract contract TokenLinkerMintBurn is TokenLinker, ERC20 {
     error BurnFailed();
 
     uint256 public immutable override implementationType = 1;
-    
+
     function _setup(bytes calldata data) internal override {
         (name, symbol, decimals) = abi.decode(data, (string, string, uint8));
     }

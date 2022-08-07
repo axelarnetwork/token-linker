@@ -3,7 +3,7 @@
 pragma solidity 0.8.9;
 
 import { ITokenLinkerFactory } from '../interfaces/ITokenLinkerFactory.sol';
-import { ImplementationLookup } from './ImplementationLookup.sol'; 
+import { ImplementationLookup } from './ImplementationLookup.sol';
 
 contract FactoryImplementationLookup is ImplementationLookup {
     // bytes32(uint256(keccak256('token-linker-type')) - 1)
@@ -28,7 +28,7 @@ contract FactoryImplementationLookup is ImplementationLookup {
 
     function implementation() public view override returns (address implementation_) {
         address factoryAddress = factory();
-        if(factoryAddress == address(0)) return address(0);
+        if (factoryAddress == address(0)) return address(0);
         implementation_ = ITokenLinkerFactory(factoryAddress).factoryManagedImplementations(tokenLinkerType());
     }
 

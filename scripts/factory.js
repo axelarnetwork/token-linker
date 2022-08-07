@@ -1,8 +1,8 @@
-const { deployAndInitContractConstant } = require("@axelar-network/axelar-utils-solidity");
-const { getDefaultProvider } = require("ethers");
-const { createAndExport } = require("@axelar-network/axelar-local-dev");
-const { deployContract } = require("@axelar-network/axelar-utils-solidity/scripts/utils");
-const { keccak256 } = require("ethers/lib/utils");
+const { deployAndInitContractConstant } = require('@axelar-network/axelar-utils-solidity');
+const { getDefaultProvider } = require('ethers');
+const { createAndExport } = require('@axelar-network/axelar-local-dev');
+const { deployContract } = require('@axelar-network/axelar-utils-solidity/scripts/utils');
+const { keccak256 } = require('ethers/lib/utils');
 
 const TokenLinkerFactory = require('../artifacts/contracts/TokenLinkerFactory.sol/TokenLinkerFactory.json');
 const LockUnlockFM = require('../artifacts/contracts/token-linkers/TokenLinkersFactoryLookup.sol/TokenLinkerLockUnlockFactoryLookup.json');
@@ -20,57 +20,44 @@ const ProxyU = require('../artifacts/contracts/token-linkers/TokenLinkerSelfLook
 const ERC20MintableBurnable = require('../artifacts/@axelar-network//axelar-utils-solidity/contracts/test/ERC20MintableBurnable.sol/ERC20MintableBurnable.json');
 
 async function setupLocal(toFund) {
-    await createAndExport(
-        {
-            chainOutputPath: './info/local.json',
-            accountsToFund: toFund,
-            relayInterval: 100,
-        },
-    );
+    await createAndExport({
+        chainOutputPath: './info/local.json',
+        accountsToFund: toFund,
+        relayInterval: 100,
+    });
 }
 
 async function deploy(chain, walletUnconnected) {
-    const provider = getDefaultProvider(chain.rpc)
+    const provider = getDefaultProvider(chain.rpc);
     const wallet = walletUnconnected.connect(provider);
     const factoryManaged = [];
     const upgradable = [];
-    console.log(`Deploying implementations on ${chain.name}.`)
-    
-    for(const contractJson of [LockUnlockFM, MintBurnFM, MintBurnExternalFM, NativeFM]) {
-        factoryManaged.push(
-            (await deployContract(
-                wallet, 
-                contractJson, 
-                [chain.gateway, chain.gasReceiver]
-            )).address
-        );
-    }
-    for(const contractJson of [LockUnlockU, MintBurnU, MintBurnExternalU, NativeU]) {
-        upgradable.push(
-            (await deployContract(
-                wallet, 
-                contractJson, 
-                [chain.gateway, chain.gasReceiver]
-            )).address
-        );
+    console.log(`Deploying implementations on ${chain.name}.`);
+
+    for (const contractJson of [LockUnlockFM, MintBurnFM, MintBurnExternalFM, NativeFM]) {
+        factoryManaged.push((await deployContract(wallet, contractJson, [chain.gateway, chain.gasReceiver])).address);
     }
 
-    console.log('Done. Deploying Factory')
+    for (const contractJson of [LockUnlockU, MintBurnU, MintBurnExternalU, NativeU]) {
+        upgradable.push((await deployContract(wallet, contractJson, [chain.gateway, chain.gasReceiver])).address);
+    }
+
+    console.log('Done. Deploying Factory');
     const bytecodeFM = ProxyFM.bytecode;
     const codehashFM = keccak256(bytecodeFM);
     const bytecodeU = ProxyU.bytecode;
     const codehashU = keccak256(bytecodeU);
-    //await _deployFactoryNonConstant(wallet, chain, codehash, factoryManaged, upgradable);
+    
     const factory = await deployAndInitContractConstant(
         chain.constAddressDeployer,
-        wallet, 
+        wallet,
         TokenLinkerFactory,
-        'factory', 
-        [codehashFM, codehashU], 
+        'factory',
+        [codehashFM, codehashU],
         [chain.gateway, chain.gasReceiver, factoryManaged, upgradable],
         10e6,
     );
-    console.log(`Deployed at ${factory.address}.`)
+    console.log(`Deployed at ${factory.address}.`);
     chain.factory = factory.address;
 }
 
@@ -87,4 +74,4 @@ module.exports = {
     setupLocal,
     deploy,
     deployToken,
-}
+};

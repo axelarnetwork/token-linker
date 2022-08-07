@@ -3,5 +3,5 @@
 pragma solidity 0.8.9;
 
 interface IExternalTokenReference {
-   function tokenAddress() external view returns(address);
+    function tokenAddress() external view returns (address);
 }

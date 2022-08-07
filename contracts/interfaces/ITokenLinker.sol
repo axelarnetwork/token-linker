@@ -8,7 +8,7 @@ interface ITokenLinker is IProxied {
     event Sending(string destinationChain, address destinationAddress, uint256 amount);
     event Receiving(string sourceChain, address destinationAddress, uint256 amount);
 
-    function implementationType() external view returns(uint256);
+    function implementationType() external view returns (uint256);
 
     function sendToken(
         string memory destinationChain,

@@ -11,28 +11,17 @@ import { Upgradable } from '../proxies/Upgradable.sol';
 import { Ownable } from '../proxies/Ownable.sol';
 
 contract TokenLinkerLockUnlockUpgradable is TokenLinkerLockUnlock, Upgradable {
-    constructor(
-        address gatewayAddress_,
-        address gasServiceAddress_
-    ) TokenLinker(gatewayAddress_, gasServiceAddress_) {}
+    constructor(address gatewayAddress_, address gasServiceAddress_) TokenLinker(gatewayAddress_, gasServiceAddress_) {}
 }
 
 contract TokenLinkerMintBurnUpgradable is TokenLinkerMintBurn, Upgradable {
-    constructor(
-        address gatewayAddress_,
-        address gasServiceAddress_
-    ) TokenLinker(gatewayAddress_, gasServiceAddress_) {}
-}
-contract TokenLinkerMintBurnExternalUpgradable is TokenLinkerMintBurnExternal, Upgradable {
-   constructor(
-        address gatewayAddress_,
-        address gasServiceAddress_
-    ) TokenLinker(gatewayAddress_, gasServiceAddress_) {}
-}
-contract TokenLinkerNativeUpgradable is TokenLinkerNative, Upgradable {
-    constructor(
-        address gatewayAddress_,
-        address gasServiceAddress_
-    ) TokenLinker(gatewayAddress_, gasServiceAddress_) {}
+    constructor(address gatewayAddress_, address gasServiceAddress_) TokenLinker(gatewayAddress_, gasServiceAddress_) {}
 }
 
+contract TokenLinkerMintBurnExternalUpgradable is TokenLinkerMintBurnExternal, Upgradable {
+    constructor(address gatewayAddress_, address gasServiceAddress_) TokenLinker(gatewayAddress_, gasServiceAddress_) {}
+}
+
+contract TokenLinkerNativeUpgradable is TokenLinkerNative, Upgradable {
+    constructor(address gatewayAddress_, address gasServiceAddress_) TokenLinker(gatewayAddress_, gasServiceAddress_) {}
+}

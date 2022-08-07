@@ -6,7 +6,7 @@ import { IProxied } from '../interfaces/IProxied.sol';
 import { SelfImplementationLookup } from './SelfImplementationLookup.sol';
 import { Proxy } from './Proxy.sol';
 import { Ownable } from './Ownable.sol';
- 
+
 abstract contract SelfLookupProxy is Proxy, SelfImplementationLookup {
     error AlreadyInitialized();
 

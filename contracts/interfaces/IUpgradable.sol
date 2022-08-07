@@ -10,8 +10,5 @@ interface IUpgradable is IProxied {
 
     event Upgraded(address newImplementation);
 
-    function upgrade(
-        address newImplementation,
-        bytes calldata params
-    ) external;
+    function upgrade(address newImplementation, bytes calldata params) external;
 }

@@ -17,7 +17,7 @@ contract TokenLinkerFactory is ITokenLinkerFactory, AxelarExecutable, Ownable {
     using StringToAddress for string;
     using AddressToString for address;
 
-    struct RemoteDeploymentData{
+    struct RemoteDeploymentData {
         string chainName;
         uint256 tlt;
         bytes params;
@@ -49,33 +49,33 @@ contract TokenLinkerFactory is ITokenLinkerFactory, AxelarExecutable, Ownable {
         address[] memory factoryManagedImplementations_,
         address[] memory upgradableImplementations_
     ) external {
-        if(gatewayAddress != address(0)) revert AlreadyInitialized();
-        if(gatewayAddress_ == address(0) || gasServiceAddress_ == address(0)) revert ZeroAddress();
+        if (gatewayAddress != address(0)) revert AlreadyInitialized();
+        if (gatewayAddress_ == address(0) || gasServiceAddress_ == address(0)) revert ZeroAddress();
         gatewayAddress = gatewayAddress_;
         gasService = IAxelarGasService(gasServiceAddress_);
         uint256 length = factoryManagedImplementations_.length;
-        for(uint256 i; i<length; ++i) {
+        for (uint256 i; i < length; ++i) {
             _checkImplementation(factoryManagedImplementations_[i], i);
-            _checkImplementation(upgradableImplementations_[i], i); 
+            _checkImplementation(upgradableImplementations_[i], i);
         }
         factoryManagedImplementations = factoryManagedImplementations_;
         upgradableImplementations = upgradableImplementations_;
     }
 
-    function _checkImplementation(address implementation, uint256 tlt) internal view{
+    function _checkImplementation(address implementation, uint256 tlt) internal view {
         uint256 size;
         assembly {
             size := extcodesize(implementation)
         }
-        if(size == 0) revert ImplementationIsNotContract();
-        if(ITokenLinker(implementation).implementationType() != tlt) revert WrongTokenLinkerType();
-    }   
+        if (size == 0) revert ImplementationIsNotContract();
+        if (ITokenLinker(implementation).implementationType() != tlt) revert WrongTokenLinkerType();
+    }
 
     function gateway() public view override returns (IAxelarGateway) {
         return IAxelarGateway(gatewayAddress);
     }
 
-    function getTokenLinkerId(address creator, bytes32 salt) public pure override returns(bytes32 id) {
+    function getTokenLinkerId(address creator, bytes32 salt) public pure override returns (bytes32 id) {
         id = keccak256(abi.encode(TOKEN_LINKER_ID_SALT, salt, creator));
     }
 
@@ -83,22 +83,20 @@ contract TokenLinkerFactory is ITokenLinkerFactory, AxelarExecutable, Ownable {
         return tokenLinkerIds.length;
     }
 
-    function _deploy(uint256 tlt, bytes32 id, bytes memory params, bool factoryManaged) internal {
+    function _deploy(
+        uint256 tlt,
+        bytes32 id,
+        bytes memory params,
+        bool factoryManaged
+    ) internal {
         address proxyAddress;
-        if(factoryManaged) {
-            TokenLinkerFactoryLookupProxy proxy = new TokenLinkerFactoryLookupProxy{salt: id}();
-            proxy.init(
-                tlt,
-                params
-            );
+        if (factoryManaged) {
+            TokenLinkerFactoryLookupProxy proxy = new TokenLinkerFactoryLookupProxy{ salt: id }();
+            proxy.init(tlt, params);
             proxyAddress = address(proxy);
         } else {
-            TokenLinkerSelfLookupProxy proxy = new TokenLinkerSelfLookupProxy{salt: id}();
-            proxy.init(
-                upgradableImplementations[tlt],
-                msg.sender,
-                params
-            );
+            TokenLinkerSelfLookupProxy proxy = new TokenLinkerSelfLookupProxy{ salt: id }();
+            proxy.init(upgradableImplementations[tlt], msg.sender, params);
             proxyAddress = address(proxy);
         }
         tokenLinkerIds.push(id);
@@ -106,16 +104,21 @@ contract TokenLinkerFactory is ITokenLinkerFactory, AxelarExecutable, Ownable {
         emit TokenLinkerDeployed(tlt, id, params, factoryManaged, proxyAddress);
     }
 
-    function deploy(uint256 tlt, bytes32 salt, bytes calldata params, bool factoryManaged) external override {
+    function deploy(
+        uint256 tlt,
+        bytes32 salt,
+        bytes calldata params,
+        bool factoryManaged
+    ) external override {
         bytes32 id = getTokenLinkerId(msg.sender, salt);
         _deploy(tlt, id, params, factoryManaged);
     }
 
     function deployMultichain(
-        uint256 tlt, 
+        uint256 tlt,
         bytes32 salt,
         bytes calldata params,
-        bool factoryManaged, 
+        bool factoryManaged,
         RemoteDeploymentData[] calldata rdd
     ) external {
         // This is the id after this point. We don't use another local variable to avoid stack_too_deep.
@@ -123,25 +126,15 @@ contract TokenLinkerFactory is ITokenLinkerFactory, AxelarExecutable, Ownable {
         _deploy(tlt, salt, params, factoryManaged);
         uint256 length = rdd.length;
         string memory thisAddress = address(this).toString();
-        for(uint256 i; i<length; i++) {
+        for (uint256 i; i < length; i++) {
             bytes memory payload = abi.encode(salt, rdd[i].tlt, rdd[i].params, factoryManaged);
             uint256 gasAmount = rdd[i].gasAmount;
             string memory chain = rdd[i].chainName;
-            if(gasAmount < address(this).balance) revert InsufficinetAmountForGas();
-            if(gasAmount > 0) {
-                gasService.payNativeGasForContractCall{value: gasAmount}(
-                    address(this), 
-                    chain, 
-                    thisAddress, 
-                    payload, 
-                    msg.sender
-                );
+            if (gasAmount < address(this).balance) revert InsufficinetAmountForGas();
+            if (gasAmount > 0) {
+                gasService.payNativeGasForContractCall{ value: gasAmount }(address(this), chain, thisAddress, payload, msg.sender);
             }
-            gateway().callContract( 
-                chain, 
-                thisAddress, 
-                payload
-            );
+            gateway().callContract(chain, thisAddress, payload);
         }
     }
 
@@ -164,7 +157,7 @@ contract TokenLinkerFactory is ITokenLinkerFactory, AxelarExecutable, Ownable {
 
     function tokenLinker(bytes32 id, bool factoryManaged) public view override returns (address tokenLinkerAddress) {
         bytes32 codeHash;
-        if(factoryManaged) {
+        if (factoryManaged) {
             codeHash = factoryManagedProxyCodehash;
         } else {
             codeHash = upgradableProxyCodehash;
@@ -173,11 +166,11 @@ contract TokenLinkerFactory is ITokenLinkerFactory, AxelarExecutable, Ownable {
     }
 
     function _execute(
-        string calldata /*sourceChain*/,
+        string calldata, /*sourceChain*/
         string calldata sourceAddress,
         bytes calldata payload
     ) internal override {
-        if(sourceAddress.toAddress() != address(this)) revert WrongSourceCaller();
+        if (sourceAddress.toAddress() != address(this)) revert WrongSourceCaller();
         (bytes32 id, uint256 tlt, bytes memory params, bool factoryManaged) = abi.decode(payload, (bytes32, uint256, bytes, bool));
         _deploy(tlt, id, params, factoryManaged);
     }
