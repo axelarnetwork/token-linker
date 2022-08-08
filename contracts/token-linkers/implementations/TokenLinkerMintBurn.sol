@@ -11,7 +11,12 @@ abstract contract TokenLinkerMintBurn is TokenLinker, ERC20 {
 
     uint256 public immutable override implementationType = 1;
 
+    function token() public view override returns (address) {
+        return address(this);
+    }
+
     function _setup(bytes calldata data) internal override {
+        super._setup(data);
         (name, symbol, decimals) = abi.decode(data, (string, string, uint8));
     }
 

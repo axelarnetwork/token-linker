@@ -14,6 +14,10 @@ abstract contract TokenLinkerNative is TokenLinker {
 
     uint256 public immutable override implementationType = 3;
 
+    function token() public view override returns (address) {
+        return address(0);
+    }
+
     function getNativeBalance() public view returns (uint256 nativeBalance) {
         assembly {
             nativeBalance := sload(NATIVE_BALANCE_SLOT)
@@ -30,7 +34,7 @@ abstract contract TokenLinkerNative is TokenLinker {
         uint256 balance = getNativeBalance();
         if (balance < amount) revert InsufficientBalance();
         (bool success, ) = to.call{ value: amount }('');
-        //if(!success) revert TransferToFailed();
+        if (!success) revert TransferToFailed();
         _setNativeBalance(balance - amount);
     }
 

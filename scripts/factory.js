@@ -47,7 +47,7 @@ async function deploy(chain, walletUnconnected) {
     const codehashFM = keccak256(bytecodeFM);
     const bytecodeU = ProxyU.bytecode;
     const codehashU = keccak256(bytecodeU);
-    
+
     const factory = await deployAndInitContractConstant(
         chain.constAddressDeployer,
         wallet,

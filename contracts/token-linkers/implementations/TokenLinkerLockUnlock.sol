@@ -4,16 +4,20 @@ pragma solidity 0.8.9;
 
 import { IERC20 } from '../../interfaces/IERC20.sol';
 import { TokenLinker } from '../TokenLinker.sol';
-import { IExternalTokenReference } from '../../interfaces/IExternalTokenReference.sol';
 
-abstract contract TokenLinkerLockUnlock is IExternalTokenReference, TokenLinker {
+abstract contract TokenLinkerLockUnlock is TokenLinker {
     error TransferFailed();
     error TransferFromFailed();
 
-    address public override tokenAddress;
+    address public tokenAddress;
     uint256 public immutable override implementationType = 0;
 
+    function token() public view override returns (address) {
+        return tokenAddress;
+    }
+
     function _setup(bytes calldata data) internal override {
+        super._setup(data);
         (tokenAddress) = abi.decode(data, (address));
     }
 
