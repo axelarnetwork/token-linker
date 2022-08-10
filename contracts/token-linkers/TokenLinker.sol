@@ -8,7 +8,7 @@ import { Proxied } from '../proxies/Proxied.sol';
 import { IAxelarGateway } from '@axelar-network/axelar-utils-solidity/contracts/interfaces/IAxelarGateway.sol';
 import { IAxelarGasService } from '@axelar-network/axelar-cgp-solidity/contracts/interfaces/IAxelarGasService.sol';
 import { ITokenLinker } from '../interfaces/ITokenLinker.sol';
-import { ITokenLinkerExecutable } from '../interfaces/ITokenLinkerExecutable.sol';
+import { ICrossChainTokenReceiver } from '../interfaces/ICrossChainTokenReceiver.sol';
 
 abstract contract TokenLinker is ITokenLinker, AxelarExecutable, Proxied {
     using StringToAddress for string;
@@ -80,7 +80,7 @@ abstract contract TokenLinker is ITokenLinker, AxelarExecutable, Proxied {
         _giveToken(recipient, amount);
         if (payload.length > 64) {
             (, , address from, bytes memory data) = abi.decode(payload, (address, uint256, address, bytes));
-            ITokenLinkerExecutable(recipient).processLinkedToken(token(), sourceChain, from, amount, data);
+            ICrossChainTokenReceiver(recipient).processCrossChainToken(token(), sourceChain, from, amount, data);
             emit ReveivingWithData(sourceChain, recipient, amount, from, data);
         } else {
             emit Receiving(sourceChain, recipient, amount);

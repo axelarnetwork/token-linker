@@ -3,8 +3,8 @@
 pragma solidity ^0.8.9;
 
 // General interface for upgradable contracts
-interface ITokenLinkerExecutable {
-    function processLinkedToken(
+interface ICrossChainTokenReceiver {
+    function processCrossChainToken(
         address tokenAddress,
         string calldata sourceChain,
         address sourceAddress,
