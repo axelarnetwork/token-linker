@@ -14,7 +14,7 @@ abstract contract TokenLinkerNative is TokenLinker {
 
     uint256 public immutable override implementationType = 3;
 
-    function token() public view override returns (address) {
+    function token() public pure override returns (address) {
         return address(0);
     }
 

@@ -2,13 +2,13 @@
 
 pragma solidity 0.8.9;
 
-import { ICrossChainTokenReceiver } from '../interfaces/ICrossChainTokenReceiver.sol';
+import { ITokenLinkerCallable } from '../interfaces/ITokenLinkerCallable.sol';
 import { IERC20 } from '../interfaces/IERC20.sol';
 
-contract TokenLinkerExecutableTest is ICrossChainTokenReceiver {
+contract TokenLinkerExecutableTest is ITokenLinkerCallable {
     string public val;
 
-    function processCrossChainToken(
+    function processToken(
         address tokenAddress,
         string calldata,
         address,
