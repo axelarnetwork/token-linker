@@ -33,6 +33,6 @@ abstract contract TokenLinkerMintBurnExternal is TokenLinker {
         (bool success, bytes memory returnData) = tokenAddress.call(abi.encodeWithSelector(burnSelector, from, amount));
         bool transferred = success && (returnData.length == uint256(0) || abi.decode(returnData, (bool)));
 
-        if (!transferred || tokenAddress.code.length == 0) revert('BurnFailed()');
+        if (!transferred || tokenAddress.code.length == 0) revert BurnFailed();
     }
 }

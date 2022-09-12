@@ -5,10 +5,11 @@ pragma solidity 0.8.9;
 interface ITokenLinkerFactory {
     error AlreadyInitialized();
     error ArrayLengthMismatch();
-    error InsufficinetAmountForGas();
+    error InsufficientAmountForGas();
     error WrongSourceCaller();
     error WrongTokenLinkerType();
     error ImplementationIsNotContract();
+    error LengthMismatch();
 
     event TokenLinkerDeployed(uint256 tlt, bytes32 indexed id, bytes params, bool factoryManaged, address indexed at);
 

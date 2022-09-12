@@ -5,6 +5,8 @@ pragma solidity 0.8.9;
 import { IProxied } from './IProxied.sol';
 
 interface ITokenLinker is IProxied {
+    error ZeroAddress();
+
     event Sending(string destinationChain, address indexed destinationAddress, uint256 indexed amount);
     event SendingWithData(
         string destinationChain,
@@ -14,7 +16,7 @@ interface ITokenLinker is IProxied {
         bytes data
     );
     event Receiving(string sourceChain, address indexed destinationAddress, uint256 indexed amount);
-    event ReveivingWithData(
+    event ReceivingWithData(
         string sourceChain,
         address indexed destinationAddress,
         uint256 indexed amount,

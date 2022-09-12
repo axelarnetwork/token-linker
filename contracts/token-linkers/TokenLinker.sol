@@ -21,6 +21,7 @@ abstract contract TokenLinker is ITokenLinker, AxelarExecutable, Proxied {
     string public thisAddress;
 
     constructor(address gatewayAddress_, address gasServiceAddress_) {
+        if(gatewayAddress_ == address(0) || gasServiceAddress_ == address(0)) revert ZeroAddress();
         gatewayAddress = gatewayAddress_;
         gasService = IAxelarGasService(gasServiceAddress_);
     }
@@ -81,7 +82,7 @@ abstract contract TokenLinker is ITokenLinker, AxelarExecutable, Proxied {
         if (payload.length > 64) {
             (, , address from, bytes memory data) = abi.decode(payload, (address, uint256, address, bytes));
             ITokenLinkerCallable(recipient).processToken(token(), sourceChain, from, amount, data);
-            emit ReveivingWithData(sourceChain, recipient, amount, from, data);
+            emit ReceivingWithData(sourceChain, recipient, amount, from, data);
         } else {
             emit Receiving(sourceChain, recipient, amount);
         }

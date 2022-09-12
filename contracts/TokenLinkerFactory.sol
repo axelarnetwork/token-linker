@@ -54,7 +54,9 @@ contract TokenLinkerFactory is ITokenLinkerFactory, AxelarExecutable, Ownable {
         gatewayAddress = gatewayAddress_;
         gasService = IAxelarGasService(gasServiceAddress_);
         uint256 length = factoryManagedImplementations_.length;
+        if(length != upgradableImplementations_.length) revert LengthMismatch();
         for (uint256 i; i < length; ++i) {
+
             _checkImplementation(factoryManagedImplementations_[i], i);
             _checkImplementation(upgradableImplementations_[i], i);
         }
@@ -126,11 +128,11 @@ contract TokenLinkerFactory is ITokenLinkerFactory, AxelarExecutable, Ownable {
         _deploy(tlt, salt, params, factoryManaged);
         uint256 length = rdd.length;
         string memory thisAddress = address(this).toString();
-        for (uint256 i; i < length; i++) {
+        for (uint256 i; i < length; ++i) {
             bytes memory payload = abi.encode(salt, rdd[i].tlt, rdd[i].params, factoryManaged);
             uint256 gasAmount = rdd[i].gasAmount;
             string memory chain = rdd[i].chainName;
-            if (gasAmount < address(this).balance) revert InsufficinetAmountForGas();
+            if (gasAmount < address(this).balance) revert InsufficientAmountForGas();
             if (gasAmount > 0) {
                 gasService.payNativeGasForContractCall{ value: gasAmount }(address(this), chain, thisAddress, payload, msg.sender);
             }
