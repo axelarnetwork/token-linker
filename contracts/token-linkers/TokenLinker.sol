@@ -21,7 +21,7 @@ abstract contract TokenLinker is ITokenLinker, AxelarExecutable, Proxied {
     string public thisAddress;
 
     constructor(address gatewayAddress_, address gasServiceAddress_) {
-        if(gatewayAddress_ == address(0) || gasServiceAddress_ == address(0)) revert ZeroAddress();
+        if(gatewayAddress_ == address(0) || gasServiceAddress_ == address(0)) revert TokenLinkerZeroAddress();
         gatewayAddress = gatewayAddress_;
         gasService = IAxelarGasService(gasServiceAddress_);
     }
