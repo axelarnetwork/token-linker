@@ -2,10 +2,10 @@
 
 pragma solidity 0.8.9;
 
-import { AxelarExecutable } from '@axelar-network/axelar-utils-solidity/contracts/executables/AxelarExecutable.sol';
-import { StringToAddress, AddressToString } from '@axelar-network/axelar-utils-solidity/contracts/StringAddressUtils.sol';
+import { AxelarExecutable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/executables/AxelarExecutable.sol';
+import { StringToAddress, AddressToString } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/StringAddressUtils.sol';
 import { Proxied } from '../proxies/Proxied.sol';
-import { IAxelarGateway } from '@axelar-network/axelar-utils-solidity/contracts/interfaces/IAxelarGateway.sol';
+import { IAxelarGateway } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarGateway.sol';
 import { IAxelarGasService } from '@axelar-network/axelar-cgp-solidity/contracts/interfaces/IAxelarGasService.sol';
 import { ITokenLinker } from '../interfaces/ITokenLinker.sol';
 import { ITokenLinkerCallable } from '../interfaces/ITokenLinkerCallable.sol';
@@ -15,14 +15,12 @@ abstract contract TokenLinker is ITokenLinker, AxelarExecutable, Proxied {
     using AddressToString for address;
 
     IAxelarGasService public immutable gasService;
-    address public immutable gatewayAddress;
     // bytes32(uint256(keccak256('token-linker')) - 1)
     bytes32 public constant override contractId = 0x6ec6af55bf1e5f27006bfa01248d73e8894ba06f23f8002b047607ff2b1944ba;
     string public thisAddress;
 
-    constructor(address gatewayAddress_, address gasServiceAddress_) {
+    constructor(address gatewayAddress_, address gasServiceAddress_) AxelarExecutable(gatewayAddress_) {
         if(gatewayAddress_ == address(0) || gasServiceAddress_ == address(0)) revert TokenLinkerZeroAddress();
-        gatewayAddress = gatewayAddress_;
         gasService = IAxelarGasService(gasServiceAddress_);
     }
 
@@ -30,10 +28,6 @@ abstract contract TokenLinker is ITokenLinker, AxelarExecutable, Proxied {
 
     function _setup(bytes calldata) internal virtual override {
         thisAddress = address(this).toString();
-    }
-
-    function gateway() public view override returns (IAxelarGateway) {
-        return IAxelarGateway(gatewayAddress);
     }
 
     function sendToken(
@@ -68,7 +62,7 @@ abstract contract TokenLinker is ITokenLinker, AxelarExecutable, Proxied {
         if (gasValue > 0) {
             gasService.payNativeGasForContractCall{ value: gasValue }(address(this), destinationChain, thisAddress_, payload, msg.sender);
         }
-        gateway().callContract(destinationChain, thisAddress_, payload);
+        gateway.callContract(destinationChain, thisAddress_, payload);
     }
 
     function _execute(

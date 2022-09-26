@@ -7,13 +7,14 @@ import { TokenLinkerSelfLookupProxy } from './token-linkers/TokenLinkerSelfLooku
 import { ITokenLinkerFactory } from './interfaces/ITokenLinkerFactory.sol';
 import { ITokenLinker } from './interfaces/ITokenLinker.sol';
 import { IOwnable } from './interfaces/IOwnable.sol';
-import { Ownable } from './proxies/Ownable.sol';
-import { IAxelarGateway } from '@axelar-network/axelar-utils-solidity/contracts/interfaces/IAxelarGateway.sol';
+import { Upgradable } from './proxies/Upgradable.sol';
+import { Proxied } from './proxies/Proxied.sol';
+import { IAxelarGateway } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarGateway.sol';
 import { IAxelarGasService } from '@axelar-network/axelar-cgp-solidity/contracts/interfaces/IAxelarGasService.sol';
-import { AxelarExecutable } from '@axelar-network/axelar-utils-solidity/contracts/executables/AxelarExecutable.sol';
-import { StringToAddress, AddressToString } from '@axelar-network/axelar-utils-solidity/contracts/StringAddressUtils.sol';
+import { AxelarExecutable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/executables/AxelarExecutable.sol';
+import { StringToAddress, AddressToString } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/StringAddressUtils.sol';
 
-contract TokenLinkerFactory is ITokenLinkerFactory, AxelarExecutable, Ownable {
+contract TokenLinkerFactory is ITokenLinkerFactory, AxelarExecutable, Proxied, Upgradable {
     using StringToAddress for string;
     using AddressToString for address;
 
@@ -27,36 +28,39 @@ contract TokenLinkerFactory is ITokenLinkerFactory, AxelarExecutable, Ownable {
     address[] public override factoryManagedImplementations;
     address[] public override upgradableImplementations;
 
-    IAxelarGasService public gasService;
+    IAxelarGasService public immutable gasService;
     address public gatewayAddress;
 
     bytes32 public immutable factoryManagedProxyCodehash;
     bytes32 public immutable upgradableProxyCodehash;
 
-    bytes32 public constant TOKEN_LINKER_ID_SALT = bytes32(uint256(keccak256('token-linker-id-salt')) - 1);
+    bytes32 public constant TOKEN_LINKER_ID_SALT = 0x499cfb677d55923bebc1cd795449c197c05b0c2a467e4a06cff4c786bc31f35e;
+    // bytes32(uint256(keccak256('token-linker-factory')) - 1)
+    bytes32 public constant override contractId = 0xa6c51be88107847c935460e49bbd180f046b860284d379b474442c02536eabe8;
 
     bytes32[] public override tokenLinkerIds;
     mapping(bytes32 => uint256) public override tokenLinkerType;
 
-    constructor(bytes32 factoryManagedProxyCodehash_, bytes32 upgradableProxyCodehash_) {
+    constructor(
+        bytes32 factoryManagedProxyCodehash_, 
+        bytes32 upgradableProxyCodehash_, 
+        address gatewayAddress_,
+        address gasServiceAddress_
+    ) AxelarExecutable(gatewayAddress_){
+        if (gasServiceAddress_ == address(0)) revert ZeroAddress();
+        gasService = IAxelarGasService(gasServiceAddress_);
         factoryManagedProxyCodehash = factoryManagedProxyCodehash_;
         upgradableProxyCodehash = upgradableProxyCodehash_;
     }
 
-    function init(
-        address gatewayAddress_,
-        address gasServiceAddress_,
-        address[] memory factoryManagedImplementations_,
-        address[] memory upgradableImplementations_
-    ) external {
-        if (gatewayAddress != address(0)) revert AlreadyInitialized();
-        if (gatewayAddress_ == address(0) || gasServiceAddress_ == address(0)) revert ZeroAddress();
-        gatewayAddress = gatewayAddress_;
-        gasService = IAxelarGasService(gasServiceAddress_);
+    function _setup(bytes calldata data) internal override {
+        (
+            address[] memory factoryManagedImplementations_,
+            address[] memory upgradableImplementations_
+        ) = abi.decode(data, (address[], address[]));
         uint256 length = factoryManagedImplementations_.length;
         if(length != upgradableImplementations_.length) revert LengthMismatch();
         for (uint256 i; i < length; ++i) {
-
             _checkImplementation(factoryManagedImplementations_[i], i);
             _checkImplementation(upgradableImplementations_[i], i);
         }
@@ -71,10 +75,6 @@ contract TokenLinkerFactory is ITokenLinkerFactory, AxelarExecutable, Ownable {
         }
         if (size == 0) revert ImplementationIsNotContract();
         if (ITokenLinker(implementation).implementationType() != tlt) revert WrongTokenLinkerType();
-    }
-
-    function gateway() public view override returns (IAxelarGateway) {
-        return IAxelarGateway(gatewayAddress);
     }
 
     function getTokenLinkerId(address creator, bytes32 salt) public pure override returns (bytes32 id) {
@@ -136,7 +136,7 @@ contract TokenLinkerFactory is ITokenLinkerFactory, AxelarExecutable, Ownable {
             if (gasAmount > 0) {
                 gasService.payNativeGasForContractCall{ value: gasAmount }(address(this), chain, thisAddress, payload, msg.sender);
             }
-            gateway().callContract(chain, thisAddress, payload);
+            gateway.callContract(chain, thisAddress, payload);
         }
     }
 

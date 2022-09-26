@@ -1,4 +1,4 @@
-const { deployContract } = require('@axelar-network/axelar-utils-solidity/scripts/utils');
+const { deployContract } = require('@axelar-network/axelar-gmp-sdk-solidity/scripts/utils');
 
 const { createNetwork } = require('@axelar-network/axelar-local-dev');
 

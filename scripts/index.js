@@ -4,19 +4,19 @@ const {
     Wallet,
     constants: { AddressZero },
 } = require('ethers');
-const { deployUpgradable, upgradeUpgradable } = require('@axelar-network/axelar-utils-solidity');
+const { deployUpgradable, upgradeUpgradable } = require('@axelar-network/axelar-gmp-sdk-solidity');
 const { createNetwork, forkAndExport } = require('@axelar-network/axelar-local-dev');
 const { keccak256, defaultAbiCoder, toUtf8Bytes } = require('ethers/lib/utils');
-const { setJSON, deployContract } = require('@axelar-network/axelar-utils-solidity/scripts/utils');
+const { setJSON, deployContract } = require('@axelar-network/axelar-gmp-sdk-solidity/scripts/utils');
 const axios = require('axios');
 
-const ERC20MintableBurnable = require('../artifacts/@axelar-network//axelar-utils-solidity/contracts/test/ERC20MintableBurnable.sol/ERC20MintableBurnable.json');
+const ERC20MintableBurnable = require('../artifacts/@axelar-network//axelar-gmp-sdk-solidity/contracts/test/ERC20MintableBurnable.sol/ERC20MintableBurnable.json');
 const TokenLinkerProxy = require('../artifacts/contracts/TokenLinkerProxy.sol/TokenLinkerProxy.json');
 const TokenLinkerNative = require('../artifacts/contracts/TokenLinkerNative.sol/TokenLinkerNative.json');
 const TokenLinkerLockUnlock = require('../artifacts/contracts/TokenLinkerLockUnlock.sol/TokenLinkerLockUnlock.json');
 const TokenLinkerMintBurn = require('../artifacts/contracts/TokenLinkerMintBurn.sol/TokenLinkerMintBurn.json');
 const TokenLinker = require('../artifacts/contracts/TokenLinker.sol/TokenLinker.json');
-const ConstAddressDeployer = require('@axelar-network/axelar-utils-solidity/dist/ConstAddressDeployer.json');
+const ConstAddressDeployer = require('@axelar-network/axelar-gmp-sdk-solidity/dist/ConstAddressDeployer.json');
 
 const deployerPrivateKey = keccak256(toUtf8Bytes(`constAddressDeployer deployer key`));
 

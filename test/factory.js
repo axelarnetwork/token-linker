@@ -8,14 +8,14 @@ const { setJSON } = require('@axelar-network/axelar-local-dev/dist/utils');
 const { setupLocal, deploy, deployToken } = require("../scripts/factory");
 require('dotenv').config();
 
-const ERC20MintableBurnable = require('../artifacts/@axelar-network/axelar-utils-solidity/contracts/test/ERC20MintableBurnable.sol/ERC20MintableBurnable.json');
+const ERC20MintableBurnable = require('../artifacts/@axelar-network/axelar-gmp-sdk-solidity/contracts/test/ERC20MintableBurnable.sol/ERC20MintableBurnable.json');
 const ITokenLinkerFactory = require('../artifacts/contracts/interfaces/ITokenLinkerFactory.sol/ITokenLinkerFactory.json');
 const ITokenLinker = require('../artifacts/contracts/interfaces/ITokenLinker.sol/ITokenLinker.json');
 const IUpgradable = require('../artifacts/contracts/interfaces/IUpgradable.sol/IUpgradable.json');
 const IERC20 = require('../artifacts/contracts/interfaces/IERC20.sol/IERC20.json');
 const IImplementationLookup = require('../artifacts/contracts/interfaces/IImplementationLookup.sol/IImplementationLookup.json');
 const TokenLinkerExecutableTest = require('../artifacts/contracts/test/TokenLinkerExecutableTest.sol/TokenLinkerExecutableTest.json');
-const { deployContract } = require('@axelar-network/axelar-utils-solidity/scripts/utils');
+const { deployContract } = require('@axelar-network/axelar-gmp-sdk-solidity/scripts/utils');
 
 let chains;
 let wallet;
@@ -209,7 +209,6 @@ describe('Token Linker Factory', () => {
                     const factory = new Contract(sourceChain.factory, ITokenLinkerFactory.abi, walletSource);  
                     const length = await factory.numberDeployed();
                     const id = await factory.tokenLinkerIds(length - 1);
-
                     await sendToken(sourceChain, destinationChain, id, factoryManaged, amountIn);
 
                     let getBalance = tokenLinkerTypes[destination].getBalance;
@@ -220,13 +219,13 @@ describe('Token Linker Factory', () => {
                             resolve();
                         }, 400);
                     });
+                    
                     balance = await getBalance(destinationTokenLinker.address, wallet.address, walletDestination.provider) - balance;
                     expect(BigInt(balance)).to.equal(BigInt(amountIn));
 
                     await sendToken(destinationChain, sourceChain, id, factoryManaged, amountOut);
                     
                     getBalance = tokenLinkerTypes[source].getBalance;
-
                     balance = await getBalance(sourceTokenLinker.address, wallet.address, walletSource.provider);
                     await new Promise((resolve) => {
                         setTimeout(() => {
