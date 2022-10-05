@@ -1,4 +1,4 @@
-const { deployAndInitContractConstant, deployUpgradable } = require('@axelar-network/axelar-gmp-sdk-solidity');
+const { deployUpgradable } = require('@axelar-network/axelar-gmp-sdk-solidity');
 const { getDefaultProvider } = require('ethers');
 const { createAndExport } = require('@axelar-network/axelar-local-dev');
 const { deployContract } = require('@axelar-network/axelar-gmp-sdk-solidity/scripts/utils');
