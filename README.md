@@ -39,10 +39,9 @@ Let's first define some variables:
 - Let `B` be the amount of ST locked by the token linker on the subnet.
 - let `M` be the amount of ST minted by the token linker on Ethereum.
 
-We, at all times, we have to have the following relationships be true:
+We, at all times, we have to have the following relationship be true:
 
-`X = Y`
-`A + B - M = X`
+`A + B - M >= max(X, Y)`
 
 These relationships will mostly hold true via the normal operation of the token linkers on each chain. The only situation that would break it is if you ever
 
@@ -64,15 +63,15 @@ Kickstarting this proccess from scratch can be a bit complicated. This is becaus
 
 The following table shows the values of `X`, `Y`, `A`, `B`, `M`, `A+B` and `X+M` **after** each step.
 
-| step | X | Y | A | B | M | A+B-M | X | X = Y | A+B-M = X |
+| step | X | Y | A | B | M | A+B-M | max(X,Y) | A+B-M >= max(X,Y) |
 | -------------|-----|-----|-----|-----|-----|-----|-----|-----|-----|
-| 1 | X<sub>0</sub> | 0 | 0 | 0 | 0 | 0 | X<sub>0</sub> | no | no |
-| 2 | X<sub>0</sub> | U | 0 | 0 | 0 | 0 | X<sub>0</sub> | no | no |
-| 3 | X<sub>0</sub> | U | 0 | 0 | 0 | 0 | X<sub>0</sub> | no | no |
-| 4 | X<sub>0</sub> | X<sub>0</sub> | 0 | X<sub>0</sub>-U | 0 | X<sub>0</sub>-U | X<sub>0</sub> | yes | no |
-| 5 | X<sub>0</sub> | X<sub>0</sub> | U | X<sub>0</sub>-2U | 0 | X<sub>0</sub>-U | X<sub>0</sub> | yes | no |
-| 6 | X<sub>0</sub> | X<sub>0</sub> | U | X<sub>0</sub>-U | 0 | X<sub>0</sub> | X<sub>0</sub> | yes | yes |
-| 7 | X<sub>0</sub> | X<sub>0</sub> | U | X<sub>0</sub>-U | 0 | X<sub>0</sub> | X<sub>0</sub> | yes | yes |
+| 1 | X<sub>0</sub> | 0 | 0 | 0 | 0 | 0 | X<sub>0</sub> | no |
+| 2 | X<sub>0</sub> | U | 0 | 0 | 0 | 0 | X<sub>0</sub> | no |
+| 3 | X<sub>0</sub> | U | 0 | 0 | 0 | 0 | X<sub>0</sub> | no |
+| 4 | X<sub>0</sub> | X<sub>0</sub> | 0 | X<sub>0</sub>-U | 0 | X<sub>0</sub>-U | X<sub>0</sub> | no |
+| 5 | X<sub>0</sub> | X<sub>0</sub> | U | X<sub>0</sub>-2U | 0 | X<sub>0</sub>-U | X<sub>0</sub> | no |
+| 6 | X<sub>0</sub> | X<sub>0</sub> | U | X<sub>0</sub>-U | 0 | X<sub>0</sub> | X<sub>0</sub> | yes |
+| 7 | X<sub>0</sub> | X<sub>0</sub> | U | X<sub>0</sub>-U | 0 | X<sub>0</sub> | X<sub>0</sub> | yes |
 
 If you can disable gas fees completely for the start of your blockchain then `U` can be zero and you can skip steps 5 and 6.
 
@@ -88,7 +87,7 @@ The following (and more) flows can happen now. All of the below assume a user ha
 
 The following table shows the values of `X`, `Y`, `A`, `B`, `M`, `A+B` and `X+M` **after** each step where both neccesairy conditions are satisfied.
 
-| step | X | Y | A | B | M | A+B-M | X | 
+| step | X | Y | A | B | M | A+B-M | max(X,Y) | 
 | -------------|-----|-----|-----|-----|-----|-----|-----|
 | 0 | X<sub>0</sub> | X<sub>0</sub> | U | X<sub>0</sub>-U | 0 | X<sub>0</sub> | X<sub>0</sub> | 
 | 1 | X<sub>0</sub> | X<sub>0</sub> | U + a | X<sub>0</sub>-U - a | 0 | X<sub>0</sub> | X<sub>0</sub> |
