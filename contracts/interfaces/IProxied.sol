@@ -8,7 +8,5 @@ import { IImplementationLookup } from './IImplementationLookup.sol';
 interface IProxied is IImplementationLookup {
     error NotProxy();
 
-    function setup(bytes calldata data) external;
-
     function contractId() external pure returns (bytes32);
 }
