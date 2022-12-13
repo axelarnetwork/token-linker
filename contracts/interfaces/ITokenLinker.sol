@@ -3,8 +3,10 @@
 pragma solidity 0.8.9;
 
 import { IProxied } from './IProxied.sol';
+import { ITokenLinkerFactory } from './ITokenLinkerFactory.sol';
+import { IFactoryUpgradable } from './IFactoryUpgradable.sol';
 
-interface ITokenLinker is IProxied {
+interface ITokenLinker is IProxied, IFactoryUpgradable {
     error TokenLinkerZeroAddress();
 
     event Sending(string destinationChain, address indexed destinationAddress, uint256 indexed amount);
@@ -23,8 +25,6 @@ interface ITokenLinker is IProxied {
         address indexed from,
         bytes data
     );
-
-    function implementationType() external view returns (uint256);
 
     function token() external view returns (address);
 

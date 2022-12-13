@@ -2,17 +2,17 @@
 
 pragma solidity 0.8.9;
 
-import { IERC20 } from '../../interfaces/IERC20.sol';
-import { ITokenLinkerFactory } from '../../interfaces/ITokenLinkerFactory.sol';
-import { TokenLinker } from '../TokenLinker.sol';
+import { IERC20 } from '../../../interfaces/IERC20.sol';
+import { ITokenLinkerFactory } from '../../../interfaces/ITokenLinkerFactory.sol';
+import { TokenLinkerVersioned } from '../TokenLinkerVersioned.sol';
 
-contract TokenLinkerLockUnlock is TokenLinker {
+contract TokenLinkerLockUnlock is TokenLinkerVersioned {
     error TransferFailed();
     error TransferFromFailed();
 
     address public tokenAddress;
 
-    constructor(address gatewayAddress_, address gasServiceAddress_) TokenLinker(gatewayAddress_, gasServiceAddress_) {}
+    constructor(address gatewayAddress_, address gasServiceAddress_, uint256 version) TokenLinkerVersioned(gatewayAddress_, gasServiceAddress_, version) {}
 
     function token() public view override returns (address) {
         return tokenAddress;

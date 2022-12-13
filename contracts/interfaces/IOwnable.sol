@@ -11,4 +11,6 @@ interface IOwnable {
     function owner() external view returns (address owner_);
 
     function transferOwnership(address newOwner) external;
+
+    function renounceOwnership() external;
 }

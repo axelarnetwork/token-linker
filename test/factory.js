@@ -5,7 +5,7 @@ const { getDefaultProvider, Contract, Wallet } = require('ethers');
 const { expect } = chai;
 const { keccak256, defaultAbiCoder } = require('ethers/lib/utils');
 const { setJSON } = require('@axelar-network/axelar-local-dev/dist/utils');
-const { setupLocal, deploy, deployToken } = require("../scripts/factory");
+const { setupLocal, deploy, deployToken, deployMultiversion } = require("../scripts/factory");
 require('dotenv').config();
 
 const ERC20MintableBurnable = require('../artifacts/@axelar-network/axelar-gmp-sdk-solidity/contracts/test/ERC20MintableBurnable.sol/ERC20MintableBurnable.json');
@@ -15,6 +15,7 @@ const IUpgradable = require('../artifacts/contracts/interfaces/IUpgradable.sol/I
 const IERC20 = require('../artifacts/contracts/interfaces/IERC20.sol/IERC20.json');
 const IImplementationLookup = require('../artifacts/contracts/interfaces/IImplementationLookup.sol/IImplementationLookup.json');
 const TokenLinkerExecutableTest = require('../artifacts/contracts/test/TokenLinkerExecutableTest.sol/TokenLinkerExecutableTest.json');
+const TokenLinkerProxy = require('../artifacts/contracts/proxies/TokenLinkerProxy.sol/TokenLinkerProxy.json');
 const { deployContract } = require('@axelar-network/axelar-gmp-sdk-solidity/scripts/utils');
 
 let chains;
@@ -89,7 +90,7 @@ const tokenLinkerTypes = [
     }
 ];
 
-async function deployTokenLinker(chain, type, factoryManaged, key = type) {
+async function deployTokenLinker(chain, type, factoryManaged, key = type + "" + factoryManaged) {
     const provider = getDefaultProvider(chain.rpc);
     const walletConnected = wallet.connect(provider);
     const factory = new Contract(chain.factory, ITokenLinkerFactory.abi, walletConnected);
@@ -104,7 +105,7 @@ async function deployTokenLinker(chain, type, factoryManaged, key = type) {
         factoryManaged,
     )).wait();
     const id = await factory.getTokenLinkerId(wallet.address, salt);
-    const address = await factory.tokenLinker(id, factoryManaged);
+    const address = await factory.tokenLinker(id);
     return new Contract(address, ITokenLinker.abi, walletConnected);
 }
 
@@ -112,8 +113,8 @@ async function sendToken(fromChain, toChain, id, factoryManaged, amount) {
     const provider = getDefaultProvider(fromChain.rpc);
     const walletConnected = wallet.connect(provider);
     const factory = new Contract(fromChain.factory, ITokenLinkerFactory.abi, walletConnected);
-    const tokenLinkerAddress = await factory.tokenLinker(id, factoryManaged);
-    const type = await factory.tokenLinkerType(id);
+    const tokenLinkerAddress = await factory.tokenLinker(id);
+    const type = await factory.tokenLinkerTypes(id);
     const tlt = tokenLinkerTypes[type];
     if(tlt.preSend) await tlt.preSend(tokenLinkerAddress, amount, walletConnected);
     const tokenLinker = new Contract(tokenLinkerAddress, ITokenLinker.abi, walletConnected);
@@ -124,8 +125,8 @@ async function sendTokenWithData(fromChain, toChain, id, factoryManaged, to, amo
     const provider = getDefaultProvider(fromChain.rpc);
     const walletConnected = wallet.connect(provider);
     const factory = new Contract(fromChain.factory, ITokenLinkerFactory.abi, walletConnected);
-    const tokenLinkerAddress = await factory.tokenLinker(id, factoryManaged);
-    const type = await factory.tokenLinkerType(id);
+    const tokenLinkerAddress = await factory.tokenLinker(id);
+    const type = await factory.tokenLinkerTypes(id);
     const tlt = tokenLinkerTypes[type];
     if(tlt.preSend) await tlt.preSend(tokenLinkerAddress, amount, walletConnected);
     const tokenLinker = new Contract(tokenLinkerAddress, ITokenLinker.abi, walletConnected);
@@ -148,6 +149,7 @@ describe('Token Linker Factory', () => {
         for(const chain of chains) {
             await deployToken(chain, wallet)
             await deploy(chain, wallet);
+            await deployMultiversion(chain, wallet);
         }
         setJSON(chains, './info/local.json');
     });
@@ -160,9 +162,9 @@ describe('Token Linker Factory', () => {
                 const walletConnected = wallet.connect(provider);
                 const factory = new Contract(chain.factory, ITokenLinkerFactory.abi, walletConnected);   
                 const tl = await deployTokenLinker(chain, i, factoryManaged);
-                const contract = new Contract(tl.address, IImplementationLookup.abi, walletConnected);
+                const contract = new Contract(tl.address, TokenLinkerProxy.abi, walletConnected);
                 const impl = await contract.implementation();
-                const implFromFactory = await factory[factoryManaged ? 'factoryManagedImplementations' : 'upgradableImplementations'](i);
+                const implFromFactory = await factory.getLatestImplementation(i);
                 expect(impl).to.equal(implFromFactory);
             });
         }
@@ -172,7 +174,7 @@ describe('Token Linker Factory', () => {
             const chain = chains[i];
             const provider = getDefaultProvider(chain.rpc);
             const walletConnected = wallet.connect(provider);
-            const factory = new Contract(chain.factory, ITokenLinkerFactory.abi, walletConnected);   
+            const factory = new Contract(chain.factoryMultiversion, ITokenLinkerFactory.abi, walletConnected);   
             const tl = await deployTokenLinker(chain, i, false, 'u' + i);
             const contract = new Contract(tl.address, IImplementationLookup.abi, walletConnected);
             const impl = await contract.implementation();
@@ -196,7 +198,7 @@ describe('Token Linker Factory', () => {
     for(const factoryManaged of [true, false]) {
         for(const source of [0, 3]) {
             for(const destination of [1, 2]) {
-                const key = 'key' + source + destination;
+                const key = 'key' + source + destination+factoryManaged;
                 const amountIn = 12345;
                 const amountOut = 1234;
                 it(`Should use a ${factoryManaged ? 'Factory' : 'Self'} Managed ${tokenLinkerTypes[source].name} and ${tokenLinkerTypes[destination].name} to bridge some assets.`, async () => {
@@ -222,9 +224,7 @@ describe('Token Linker Factory', () => {
                     
                     balance = await getBalance(destinationTokenLinker.address, wallet.address, walletDestination.provider) - balance;
                     expect(BigInt(balance)).to.equal(BigInt(amountIn));
-
                     await sendToken(destinationChain, sourceChain, id, factoryManaged, amountOut);
-                    
                     getBalance = tokenLinkerTypes[source].getBalance;
                     balance = await getBalance(sourceTokenLinker.address, wallet.address, walletSource.provider);
                     await new Promise((resolve) => {

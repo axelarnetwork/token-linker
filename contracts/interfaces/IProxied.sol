@@ -9,4 +9,6 @@ interface IProxied is IImplementationLookup {
     error NotProxy();
 
     function contractId() external pure returns (bytes32);
+
+    function setup(bytes calldata data) external;
 }

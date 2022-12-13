@@ -2,10 +2,10 @@
 
 pragma solidity 0.8.9;
 
-import { TokenLinker } from '../TokenLinker.sol';
-import { ITokenLinkerFactory } from '../../interfaces/ITokenLinkerFactory.sol';
+import { TokenLinkerVersioned } from '../TokenLinkerVersioned.sol';
+import { ITokenLinkerFactory } from '../../../interfaces/ITokenLinkerFactory.sol';
 
-contract TokenLinkerMintBurnExternal is TokenLinker {
+contract TokenLinkerMintBurnExternal is TokenLinkerVersioned {
     error MintFailed();
     error BurnFailed();
 
@@ -13,7 +13,7 @@ contract TokenLinkerMintBurnExternal is TokenLinker {
     bytes4 public mintSelector;
     bytes4 public burnSelector;
 
-    constructor(address gatewayAddress_, address gasServiceAddress_) TokenLinker(gatewayAddress_, gasServiceAddress_) {}
+    constructor(address gatewayAddress_, address gasServiceAddress_, uint256 version) TokenLinkerVersioned(gatewayAddress_, gasServiceAddress_, version) {}
 
     function token() public view override returns (address) {
         return tokenAddress;

@@ -4,16 +4,16 @@ pragma solidity 0.8.9;
 
 import { AxelarExecutable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/executables/AxelarExecutable.sol';
 import { StringToAddress, AddressToString } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/StringAddressUtils.sol';
-import { Proxied } from '../proxies/Proxied.sol';
-import { FactoryUpgradable } from '../proxies/FactoryUpgradable.sol';
+import { Proxied } from '../../proxies/Proxied.sol';
+import { FactoryUpgradable } from '../../proxies/FactoryUpgradable.sol';
 import { IAxelarGateway } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarGateway.sol';
 import { IAxelarGasService } from '@axelar-network/axelar-cgp-solidity/contracts/interfaces/IAxelarGasService.sol';
-import { ITokenLinker } from '../interfaces/ITokenLinker.sol';
-import { IFactoryUpgradable } from '../interfaces/IFactoryUpgradable.sol';
-import { ITokenLinkerCallable } from '../interfaces/ITokenLinkerCallable.sol';
-import { ITokenLinkerFactory } from '../interfaces/ITokenLinkerFactory.sol';
+import { ITokenLinker } from '../../interfaces/ITokenLinker.sol';
+import { IFactoryUpgradable } from '../../interfaces/IFactoryUpgradable.sol';
+import { ITokenLinkerCallable } from '../../interfaces/ITokenLinkerCallable.sol';
+import { ITokenLinkerFactory } from '../../interfaces/ITokenLinkerFactory.sol';
 
-abstract contract TokenLinker is ITokenLinker, AxelarExecutable, Proxied, FactoryUpgradable {
+abstract contract TokenLinkerVersioned is ITokenLinker, AxelarExecutable, Proxied, FactoryUpgradable {
     using StringToAddress for string;
     using AddressToString for address;
 
@@ -22,16 +22,17 @@ abstract contract TokenLinker is ITokenLinker, AxelarExecutable, Proxied, Factor
     bytes32 public constant override contractId = 0x6ec6af55bf1e5f27006bfa01248d73e8894ba06f23f8002b047607ff2b1944ba;
     string public thisAddress;
 
-    uint256 public constant VERSION = 0;
+    uint256 public immutable VERSION;
 
-    constructor(address gatewayAddress_, address gasServiceAddress_) AxelarExecutable(gatewayAddress_) {
+    constructor(address gatewayAddress_, address gasServiceAddress_, uint256 version_) AxelarExecutable(gatewayAddress_) {
         if(gatewayAddress_ == address(0) || gasServiceAddress_ == address(0)) revert TokenLinkerZeroAddress();
         gasService = IAxelarGasService(gasServiceAddress_);
+        VERSION = version_;
     }
 
     function token() public view virtual override returns (address);
 
-    function version() public pure override returns (uint256) {
+    function version() public view override returns (uint256) {
         return VERSION;
     }
 

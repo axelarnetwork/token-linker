@@ -2,8 +2,7 @@
 
 pragma solidity 0.8.9;
 
-import { TokenLinkerFactoryLookupProxy } from './token-linkers/TokenLinkerFactoryLookupProxy.sol';
-import { TokenLinkerSelfLookupProxy } from './token-linkers/TokenLinkerSelfLookupProxy.sol';
+import { TokenLinkerProxy } from './proxies/TokenLinkerProxy.sol';
 import { ITokenLinkerFactory } from './interfaces/ITokenLinkerFactory.sol';
 import { ITokenLinker } from './interfaces/ITokenLinker.sol';
 import { IOwnable } from './interfaces/IOwnable.sol';
@@ -14,7 +13,7 @@ import { IAxelarGasService } from '@axelar-network/axelar-cgp-solidity/contracts
 import { AxelarExecutable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/executables/AxelarExecutable.sol';
 import { StringToAddress, AddressToString } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/StringAddressUtils.sol';
 
-contract TokenLinkerFactory is ITokenLinkerFactory, AxelarExecutable, Proxied, Upgradable {
+contract TokenLinkerFactory is ITokenLinkerFactory, AxelarExecutable, Upgradable {
     using StringToAddress for string;
     using AddressToString for address;
 
@@ -25,50 +24,76 @@ contract TokenLinkerFactory is ITokenLinkerFactory, AxelarExecutable, Proxied, U
         uint256 gasAmount;
     }
 
-    address[] public override factoryManagedImplementations;
-    address[] public override upgradableImplementations;
-
     IAxelarGasService public immutable gasService;
     address public gatewayAddress;
 
-    bytes32 public immutable factoryManagedProxyCodehash;
-    bytes32 public immutable upgradableProxyCodehash;
+    bytes32 public immutable proxyCodehash;
+
+    uint256 public constant tltNumber = 4;
 
     bytes32 public constant TOKEN_LINKER_ID_SALT = 0x499cfb677d55923bebc1cd795449c197c05b0c2a467e4a06cff4c786bc31f35e;
     // bytes32(uint256(keccak256('token-linker-factory')) - 1)
     bytes32 public constant override contractId = 0xa6c51be88107847c935460e49bbd180f046b860284d379b474442c02536eabe8;
+    // uint256(keccak256('implementation-slot-salt')) - 1
+    uint256 public constant IMPLEMENTATION_SLOT_MASK = 0x89eeec7092890331abf71a989f3da1ef481b3c66af66b7eefcbd3334371285f0;
 
     bytes32[] public override tokenLinkerIds;
-    mapping(bytes32 => uint256) public override tokenLinkerType;
+    mapping(bytes32 => TokenLinkerType) public override tokenLinkerTypes;
+
+    address public immutable latestLockUnlock; 
+    address public immutable latestMintBurn;
+    address public immutable latestMintBurnExternal;
+    address public immutable latestNative;
+
+    uint256 public immutable latestVersion;
+
+    bool private deployingLatest;
+    TokenLinkerType private deployingTlt;
+    uint256 private deployingVersion;
 
     constructor(
-        bytes32 factoryManagedProxyCodehash_, 
-        bytes32 upgradableProxyCodehash_, 
+        bytes32 proxyCodehash_, 
         address gatewayAddress_,
-        address gasServiceAddress_
+        address gasServiceAddress_,
+        uint256 latestVersion_,
+        address[] memory implementations
     ) AxelarExecutable(gatewayAddress_){
         if (gasServiceAddress_ == address(0)) revert ZeroAddress();
         gasService = IAxelarGasService(gasServiceAddress_);
-        factoryManagedProxyCodehash = factoryManagedProxyCodehash_;
-        upgradableProxyCodehash = upgradableProxyCodehash_;
+        proxyCodehash = proxyCodehash_;
+        latestVersion = latestVersion_;
+        if(implementations.length != tltNumber) revert LengthMismatch();
+        for (uint256 i; i < tltNumber; ++i) {
+            _checkImplementation(implementations[i], TokenLinkerType(i));
+        }
+        latestLockUnlock = implementations[0];
+        latestMintBurn = implementations[1];
+        latestMintBurnExternal = implementations[2];
+        latestNative = implementations[3];
+    }
+
+    function getSlot(TokenLinkerType tlt, uint256 version) internal pure returns(uint256 slot) {
+        slot = uint256(keccak256(abi.encode(IMPLEMENTATION_SLOT_MASK, tlt))) + version;
     }
 
     function _setup(bytes calldata data) internal override {
-        (
-            address[] memory factoryManagedImplementations_,
-            address[] memory upgradableImplementations_
-        ) = abi.decode(data, (address[], address[]));
-        uint256 length = factoryManagedImplementations_.length;
-        if(length != upgradableImplementations_.length) revert LengthMismatch();
-        for (uint256 i; i < length; ++i) {
-            _checkImplementation(factoryManagedImplementations_[i], i);
-            _checkImplementation(upgradableImplementations_[i], i);
+        address[][] memory implementations = abi.decode(data, (address[][]));
+        uint256 length = implementations.length;
+        if(length != tltNumber) revert LengthMismatch();
+        for (uint256 tlt; tlt < length; ++tlt) {
+            uint256 length2 = implementations[tlt].length;
+            if(length2 != latestVersion + 1) revert LengthMismatch();
+            for (uint256 version; version < length2; ++version) {
+                address impl = implementations[tlt][version];
+                //if we add another token linker type in the future uncomment the below since not all versions will exist.
+                //if(impl == address(0)) continue;
+                _checkImplementation(impl, TokenLinkerType(tlt));
+                _setImplementation(TokenLinkerType(tlt), version, impl);
+            }
         }
-        factoryManagedImplementations = factoryManagedImplementations_;
-        upgradableImplementations = upgradableImplementations_;
     }
 
-    function _checkImplementation(address implementation, uint256 tlt) internal view {
+    function _checkImplementation(address implementation, TokenLinkerType tlt) internal view {
         uint256 size;
         assembly {
             size := extcodesize(implementation)
@@ -85,29 +110,39 @@ contract TokenLinkerFactory is ITokenLinkerFactory, AxelarExecutable, Proxied, U
         return tokenLinkerIds.length;
     }
 
+    function _setDeployingTokenLinkerData(bool factoryManaged, TokenLinkerType tlt, uint256 version) internal {
+        deployingLatest = factoryManaged;
+        deployingTlt = tlt;
+        deployingVersion = version;
+    }
+
+    function getDeployingTokenLinkerData() external override view returns (bool factoryManaged, TokenLinkerType tlt, uint256 version) {
+        factoryManaged = deployingLatest;
+        tlt = deployingTlt;
+        version = deployingVersion;
+    }
+
     function _deploy(
-        uint256 tlt,
+        TokenLinkerType tlt,
         bytes32 id,
         bytes memory params,
-        bool factoryManaged
+        bool factoryManaged,
+        uint256 version
     ) internal {
         address proxyAddress;
-        if (factoryManaged) {
-            TokenLinkerFactoryLookupProxy proxy = new TokenLinkerFactoryLookupProxy{ salt: id }();
-            proxy.init(tlt, params);
-            proxyAddress = address(proxy);
-        } else {
-            TokenLinkerSelfLookupProxy proxy = new TokenLinkerSelfLookupProxy{ salt: id }();
-            proxy.init(upgradableImplementations[tlt], msg.sender, params);
-            proxyAddress = address(proxy);
-        }
+        _setDeployingTokenLinkerData(factoryManaged, tlt, version);
+        TokenLinkerProxy proxy = new TokenLinkerProxy{ salt: id }();
+        _setDeployingTokenLinkerData(false, TokenLinkerType(0), 0);
+        address owner;
+        if(!factoryManaged) owner = msg.sender;
+        proxy.init(owner, params);
         tokenLinkerIds.push(id);
-        tokenLinkerType[id] = tlt;
+        tokenLinkerTypes[id] = tlt;
         emit TokenLinkerDeployed(tlt, id, params, factoryManaged, proxyAddress);
     }
 
     function deploy(
-        uint256 tlt,
+        TokenLinkerType tlt,
         bytes32 salt,
         bytes calldata params,
         bool factoryManaged
@@ -117,7 +152,7 @@ contract TokenLinkerFactory is ITokenLinkerFactory, AxelarExecutable, Proxied, U
     }
 
     function deployMultichain(
-        uint256 tlt,
+        TokenLinkerType tlt,
         bytes32 salt,
         bytes calldata params,
         bool factoryManaged,
@@ -157,14 +192,8 @@ contract TokenLinkerFactory is ITokenLinkerFactory, AxelarExecutable, Proxied, U
         );
     }
 
-    function tokenLinker(bytes32 id, bool factoryManaged) public view override returns (address tokenLinkerAddress) {
-        bytes32 codeHash;
-        if (factoryManaged) {
-            codeHash = factoryManagedProxyCodehash;
-        } else {
-            codeHash = upgradableProxyCodehash;
-        }
-        tokenLinkerAddress = _getAddress(id, codeHash);
+    function tokenLinker(bytes32 id) public view override returns (address tokenLinkerAddress) {
+        tokenLinkerAddress = _getAddress(id, proxyCodehash);
     }
 
     function _execute(
@@ -173,7 +202,29 @@ contract TokenLinkerFactory is ITokenLinkerFactory, AxelarExecutable, Proxied, U
         bytes calldata payload
     ) internal override {
         if (sourceAddress.toAddress() != address(this)) revert WrongSourceCaller();
-        (bytes32 id, uint256 tlt, bytes memory params, bool factoryManaged) = abi.decode(payload, (bytes32, uint256, bytes, bool));
+        (bytes32 id, TokenLinkerType tlt, bytes memory params, bool factoryManaged) = abi.decode(payload, (bytes32, TokenLinkerType, bytes, bool));
         _deploy(tlt, id, params, factoryManaged);
+    }
+
+    function getImplementation(TokenLinkerType tlt, uint256 version) external view returns (address impl) {
+        if(version > latestVersion) revert InvalidVersion();
+        uint256 slot = getSlot(tlt, version);
+        assembly {
+            impl := sload(slot)
+        }
+    }
+
+    function _setImplementation(TokenLinkerType tlt, uint256 version, address impl) internal {
+        uint256 slot = getSlot(tlt, version);
+        assembly {
+            sstore(slot, impl)
+        }
+    }
+
+    function getLatestImplementation(TokenLinkerType tlt) external view returns (address) {
+        if(tlt == TokenLinkerType.lockUnlock) return latestLockUnlock;
+        if(tlt == TokenLinkerType.mintBurn) return latestMintBurn;
+        if(tlt == TokenLinkerType.mintBurnExternal) return latestMintBurnExternal;
+        return latestNative;
     }
 }

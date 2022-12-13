@@ -2,15 +2,15 @@
 
 pragma solidity 0.8.9;
 
-import { TokenLinker } from '../TokenLinker.sol';
-import { ITokenLinkerFactory } from '../../interfaces/ITokenLinkerFactory.sol';
-import { ERC20 } from '../../utils/ERC20.sol';
+import { TokenLinkerVersioned } from '../TokenLinkerVersioned.sol';
+import { ITokenLinkerFactory } from '../../../interfaces/ITokenLinkerFactory.sol';
+import { ERC20 } from '../../../utils/ERC20.sol';
 
-contract TokenLinkerMintBurn is TokenLinker, ERC20 {
+contract TokenLinkerMintBurn is TokenLinkerVersioned, ERC20 {
     error MintFailed();
     error BurnFailed();
 
-    constructor(address gatewayAddress_, address gasServiceAddress_) TokenLinker(gatewayAddress_, gasServiceAddress_) {}
+    constructor(address gatewayAddress_, address gasServiceAddress_, uint256 version) TokenLinkerVersioned(gatewayAddress_, gasServiceAddress_, version) {}
 
     function token() public view override returns (address) {
         return address(this);

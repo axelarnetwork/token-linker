@@ -2,10 +2,10 @@
 
 pragma solidity 0.8.9;
 
-import { TokenLinker } from '../TokenLinker.sol';
-import { ITokenLinkerFactory } from '../../interfaces/ITokenLinkerFactory.sol';
+import { TokenLinkerVersioned } from '../TokenLinkerVersioned.sol';
+import { ITokenLinkerFactory } from '../../../interfaces/ITokenLinkerFactory.sol';
 
-contract TokenLinkerNative is TokenLinker {
+contract TokenLinkerNative is TokenLinkerVersioned {
     error InsufficientBalance();
     error TranferFromNativeFailed();
     error TransferToFailed();
@@ -13,7 +13,7 @@ contract TokenLinkerNative is TokenLinker {
     //keccak256('native_balance')
     uint256 public constant NATIVE_BALANCE_SLOT = 0x2b1b2f0e2e6377507cc7f28638bed85633f644ec5614112adcc88f3c5e87903a;
 
-    constructor(address gatewayAddress_, address gasServiceAddress_) TokenLinker(gatewayAddress_, gasServiceAddress_) {}
+    constructor(address gatewayAddress_, address gasServiceAddress_, uint256 version) TokenLinkerVersioned(gatewayAddress_, gasServiceAddress_, version) {}
 
     function token() public pure override returns (address) {
         return address(0);

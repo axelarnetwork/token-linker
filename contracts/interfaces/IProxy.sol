@@ -9,6 +9,7 @@ interface IProxy is IImplementationLookup {
     error SetupFailed();
     error InvalidImplementation();
     error EtherNotAccepted();
+    error AlreadyInitialized();
 
     function contractId() external pure returns (bytes32);
 }
