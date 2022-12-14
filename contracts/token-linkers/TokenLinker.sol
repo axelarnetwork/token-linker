@@ -31,7 +31,7 @@ abstract contract TokenLinker is ITokenLinker, AxelarExecutable, Proxied, Factor
 
     function token() public view virtual override returns (address);
 
-    function version() public pure override returns (uint256) {
+    function implementationVersion() public pure override returns (uint256) {
         return VERSION;
     }
 
@@ -43,7 +43,7 @@ abstract contract TokenLinker is ITokenLinker, AxelarExecutable, Proxied, Factor
         string calldata destinationChain,
         address to,
         uint256 amount
-    ) external payable override {
+    ) external payable override notFrozen {
         emit Sending(destinationChain, to, amount);
         bytes memory payload = abi.encode(to, amount);
         _sendPayload(destinationChain, amount, payload);
@@ -54,7 +54,7 @@ abstract contract TokenLinker is ITokenLinker, AxelarExecutable, Proxied, Factor
         address to,
         uint256 amount,
         bytes calldata data
-    ) external payable override {
+    ) external payable override notFrozen {
         emit SendingWithData(destinationChain, to, amount, msg.sender, data);
         bytes memory payload = abi.encode(to, amount, msg.sender, data);
         _sendPayload(destinationChain, amount, payload);
@@ -78,7 +78,7 @@ abstract contract TokenLinker is ITokenLinker, AxelarExecutable, Proxied, Factor
         string calldata sourceChain,
         string calldata sourceAddress,
         bytes calldata payload
-    ) internal override {
+    ) internal override notFrozen {
         if (sourceAddress.toAddress() != address(this)) return;
         (address recipient, uint256 amount) = abi.decode(payload, (address, uint256));
         _giveToken(recipient, amount);

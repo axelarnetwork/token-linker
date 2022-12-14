@@ -6,7 +6,7 @@ import { IProxied } from './IProxied.sol';
 import { ITokenLinkerFactory } from './ITokenLinkerFactory.sol';
 import { IFactoryUpgradable } from './IFactoryUpgradable.sol';
 
-interface ITokenLinker is IProxied, IFactoryUpgradable {
+interface ITokenLinker is IFactoryUpgradable {
     error TokenLinkerZeroAddress();
 
     event Sending(string destinationChain, address indexed destinationAddress, uint256 indexed amount);

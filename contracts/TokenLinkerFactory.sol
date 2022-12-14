@@ -12,10 +12,12 @@ import { IAxelarGateway } from '@axelar-network/axelar-gmp-sdk-solidity/contract
 import { IAxelarGasService } from '@axelar-network/axelar-cgp-solidity/contracts/interfaces/IAxelarGasService.sol';
 import { AxelarExecutable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/executables/AxelarExecutable.sol';
 import { StringToAddress, AddressToString } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/StringAddressUtils.sol';
+import { VersionManagement } from './libraries/VersionManagement.sol';
 
 contract TokenLinkerFactory is ITokenLinkerFactory, AxelarExecutable, Upgradable {
     using StringToAddress for string;
     using AddressToString for address;
+    using VersionManagement for bytes32;
 
     struct RemoteDeploymentData {
         string chainName;
@@ -45,11 +47,9 @@ contract TokenLinkerFactory is ITokenLinkerFactory, AxelarExecutable, Upgradable
     address public immutable latestMintBurnExternal;
     address public immutable latestNative;
 
-    uint256 public immutable latestVersion;
+    uint256 public immutable override latestVersion;
 
-    bool private deployingLatest;
-    TokenLinkerType private deployingTlt;
-    uint256 private deployingVersion;
+    bytes public override deployingData;
 
     constructor(
         bytes32 proxyCodehash_, 
@@ -110,61 +110,48 @@ contract TokenLinkerFactory is ITokenLinkerFactory, AxelarExecutable, Upgradable
         return tokenLinkerIds.length;
     }
 
-    function _setDeployingTokenLinkerData(bool factoryManaged, TokenLinkerType tlt, uint256 version) internal {
-        deployingLatest = factoryManaged;
-        deployingTlt = tlt;
-        deployingVersion = version;
-    }
-
-    function getDeployingTokenLinkerData() external override view returns (bool factoryManaged, TokenLinkerType tlt, uint256 version) {
-        factoryManaged = deployingLatest;
-        tlt = deployingTlt;
-        version = deployingVersion;
-    }
-
     function _deploy(
         TokenLinkerType tlt,
+        bytes32 versionManagement,
         bytes32 id,
-        bytes memory params,
-        bool factoryManaged,
-        uint256 version
+        bytes memory params
     ) internal {
         address proxyAddress;
-        _setDeployingTokenLinkerData(factoryManaged, tlt, version);
+        deployingData = abi.encode(tlt, versionManagement);
         TokenLinkerProxy proxy = new TokenLinkerProxy{ salt: id }();
-        _setDeployingTokenLinkerData(false, TokenLinkerType(0), 0);
-        address owner;
-        if(!factoryManaged) owner = msg.sender;
+        deployingData = new bytes(0);
+        address owner = address(this);
+        if(!versionManagement.isFactoryManaged()) owner = msg.sender;
         proxy.init(owner, params);
         tokenLinkerIds.push(id);
         tokenLinkerTypes[id] = tlt;
-        emit TokenLinkerDeployed(tlt, id, params, factoryManaged, proxyAddress);
+        emit TokenLinkerDeployed(tlt, versionManagement, id, params, proxyAddress);
     }
 
     function deploy(
         TokenLinkerType tlt,
+        bytes32 versionManagement,
         bytes32 salt,
-        bytes calldata params,
-        bool factoryManaged
-    ) external override {
+        bytes calldata params
+    ) external override notFrozen {
         bytes32 id = getTokenLinkerId(msg.sender, salt);
-        _deploy(tlt, id, params, factoryManaged);
+        _deploy(tlt, versionManagement, id, params);
     }
 
     function deployMultichain(
         TokenLinkerType tlt,
+        bytes32 versionManagement,
         bytes32 salt,
         bytes calldata params,
-        bool factoryManaged,
         RemoteDeploymentData[] calldata rdd
-    ) external {
+    ) external notFrozen {
         // This is the id after this point. We don't use another local variable to avoid stack_too_deep.
         salt = getTokenLinkerId(msg.sender, salt);
-        _deploy(tlt, salt, params, factoryManaged);
+        _deploy(tlt, versionManagement, salt, params);
         uint256 length = rdd.length;
         string memory thisAddress = address(this).toString();
         for (uint256 i; i < length; ++i) {
-            bytes memory payload = abi.encode(salt, rdd[i].tlt, rdd[i].params, factoryManaged);
+            bytes memory payload = abi.encode(salt, versionManagement, rdd[i].tlt, rdd[i].params);
             uint256 gasAmount = rdd[i].gasAmount;
             string memory chain = rdd[i].chainName;
             if (gasAmount < address(this).balance) revert InsufficientAmountForGas();
@@ -196,18 +183,18 @@ contract TokenLinkerFactory is ITokenLinkerFactory, AxelarExecutable, Upgradable
         tokenLinkerAddress = _getAddress(id, proxyCodehash);
     }
 
-    function _execute(
+    function _execute (
         string calldata, /*sourceChain*/
         string calldata sourceAddress,
         bytes calldata payload
-    ) internal override {
+    ) internal override notFrozen {
         if (sourceAddress.toAddress() != address(this)) revert WrongSourceCaller();
-        (bytes32 id, TokenLinkerType tlt, bytes memory params, bool factoryManaged) = abi.decode(payload, (bytes32, TokenLinkerType, bytes, bool));
-        _deploy(tlt, id, params, factoryManaged);
+        (bytes32 id, TokenLinkerType tlt, bytes32 versionManagement, bytes memory params) = abi.decode(payload, (bytes32, TokenLinkerType, bytes32, bytes));
+        _deploy(tlt, versionManagement, id, params);
     }
 
     function getImplementation(TokenLinkerType tlt, uint256 version) external view returns (address impl) {
-        if(version > latestVersion) revert InvalidVersion();
+        if(version > latestVersion) revert('InvalidVersion()');
         uint256 slot = getSlot(tlt, version);
         assembly {
             impl := sload(slot)
@@ -226,5 +213,15 @@ contract TokenLinkerFactory is ITokenLinkerFactory, AxelarExecutable, Upgradable
         if(tlt == TokenLinkerType.mintBurn) return latestMintBurn;
         if(tlt == TokenLinkerType.mintBurnExternal) return latestMintBurnExternal;
         return latestNative;
+    }
+
+    function upgradeTokenLinkers(bytes32[] calldata ids, bytes[] calldata params) external onlyOwner {
+        uint256 length = ids.length;
+        if(length != params.length) revert ArrayLengthMismatch();
+
+        for(uint256 i; i<length; ++i) {
+            address tl = tokenLinker(ids[i]);
+            ITokenLinker(tl).upgrade(latestVersion, params[i]);
+        }
     }
 }

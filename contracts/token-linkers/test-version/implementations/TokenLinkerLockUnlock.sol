@@ -21,7 +21,6 @@ contract TokenLinkerLockUnlock is TokenLinkerVersioned {
         tlt = ITokenLinkerFactory.TokenLinkerType.lockUnlock;
     }
 
-
     function _setup(bytes calldata data) internal override {
         super._setup(data);
         (tokenAddress) = abi.decode(data, (address));

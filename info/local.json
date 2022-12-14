@@ -10,8 +10,8 @@
     "tokenName": "DEV",
     "tokenSymbol": "DEV",
     "token": "0xe8014F32A38EB795BDa32E62a814bF788F42d693",
-    "factory": "0x0a9907a6879843C1b5E2E823E28b6Ab9Be1933a8",
-    "factoryMultiversion": "0xB0cAf89Eaff8Af9cf9cDCA6d021e28ce97E81AA5"
+    "factory": "0xbDCFEB7915f105CeDaD0418342e0dDCca9D5C29D",
+    "factoryMultiversion": "0x37FFe4A4585aab1Fa3f225DBE909Eed9042BE942"
   },
   {
     "name": "Avalanche",
@@ -24,8 +24,8 @@
     "tokenName": "Avax",
     "tokenSymbol": "AVAX",
     "token": "0xe8014F32A38EB795BDa32E62a814bF788F42d693",
-    "factory": "0x0a9907a6879843C1b5E2E823E28b6Ab9Be1933a8",
-    "factoryMultiversion": "0xB0cAf89Eaff8Af9cf9cDCA6d021e28ce97E81AA5"
+    "factory": "0xbDCFEB7915f105CeDaD0418342e0dDCca9D5C29D",
+    "factoryMultiversion": "0x37FFe4A4585aab1Fa3f225DBE909Eed9042BE942"
   },
   {
     "name": "Fantom",
@@ -38,8 +38,8 @@
     "tokenName": "Fantom",
     "tokenSymbol": "FTM",
     "token": "0xe8014F32A38EB795BDa32E62a814bF788F42d693",
-    "factory": "0x0a9907a6879843C1b5E2E823E28b6Ab9Be1933a8",
-    "factoryMultiversion": "0xB0cAf89Eaff8Af9cf9cDCA6d021e28ce97E81AA5"
+    "factory": "0xbDCFEB7915f105CeDaD0418342e0dDCca9D5C29D",
+    "factoryMultiversion": "0x37FFe4A4585aab1Fa3f225DBE909Eed9042BE942"
   },
   {
     "name": "Ethereum",
@@ -52,8 +52,8 @@
     "tokenName": "Ether",
     "tokenSymbol": "ETH",
     "token": "0xe8014F32A38EB795BDa32E62a814bF788F42d693",
-    "factory": "0x0a9907a6879843C1b5E2E823E28b6Ab9Be1933a8",
-    "factoryMultiversion": "0xB0cAf89Eaff8Af9cf9cDCA6d021e28ce97E81AA5"
+    "factory": "0xbDCFEB7915f105CeDaD0418342e0dDCca9D5C29D",
+    "factoryMultiversion": "0x37FFe4A4585aab1Fa3f225DBE909Eed9042BE942"
   },
   {
     "name": "Polygon",
@@ -66,7 +66,7 @@
     "tokenName": "Matic",
     "tokenSymbol": "MATIC",
     "token": "0xe8014F32A38EB795BDa32E62a814bF788F42d693",
-    "factory": "0x0a9907a6879843C1b5E2E823E28b6Ab9Be1933a8",
-    "factoryMultiversion": "0xB0cAf89Eaff8Af9cf9cDCA6d021e28ce97E81AA5"
+    "factory": "0xbDCFEB7915f105CeDaD0418342e0dDCca9D5C29D",
+    "factoryMultiversion": "0x37FFe4A4585aab1Fa3f225DBE909Eed9042BE942"
   }
 ]

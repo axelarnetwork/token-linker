@@ -4,7 +4,7 @@ pragma solidity 0.8.9;
 
 import { IProxy } from '../interfaces/IProxy.sol';
 import { ImplementationLookup } from './ImplementationLookup.sol';
-import { Ownable } from './Ownable.sol';
+import { Ownable } from '../utils/Ownable.sol';
 import { IProxied } from '../interfaces/IProxied.sol';
 
 abstract contract Proxy is IProxy, Ownable, ImplementationLookup {    

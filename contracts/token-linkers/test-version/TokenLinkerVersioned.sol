@@ -21,6 +21,9 @@ abstract contract TokenLinkerVersioned is ITokenLinker, AxelarExecutable, Proxie
     // bytes32(uint256(keccak256('token-linker')) - 1)
     bytes32 public constant override contractId = 0x6ec6af55bf1e5f27006bfa01248d73e8894ba06f23f8002b047607ff2b1944ba;
     string public thisAddress;
+    // This messes up the slots of all the token linkers, 
+    // I will make them more robust in the future but for now this helps test stuff
+    bool public upgraded;
 
     uint256 public immutable VERSION;
 
@@ -32,7 +35,7 @@ abstract contract TokenLinkerVersioned is ITokenLinker, AxelarExecutable, Proxie
 
     function token() public view virtual override returns (address);
 
-    function version() public view override returns (uint256) {
+    function implementationVersion() public view override returns (uint256) {
         return VERSION;
     }
 
