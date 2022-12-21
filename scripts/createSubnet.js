@@ -1,3 +1,0 @@
-const { createSubnet } = require('.');
-
-createSubnet();

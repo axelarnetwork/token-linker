@@ -10,7 +10,8 @@
     "tokenName": "DEV",
     "tokenSymbol": "DEV",
     "token": "0xe8014F32A38EB795BDa32E62a814bF788F42d693",
-    "factory": "0x15f1D6729E526E9F99AF67c8f4d7Da7a40770dcC"
+    "tokenLinker": "0x2E19Fb927f17042BFf1d3066dE618E0F2027218c",
+    "remoteAddressValidator": "0x32Fcc0a13A8BE38caC293893BE0739040D17eed0"
   },
   {
     "name": "Avalanche",
@@ -23,7 +24,8 @@
     "tokenName": "Avax",
     "tokenSymbol": "AVAX",
     "token": "0xe8014F32A38EB795BDa32E62a814bF788F42d693",
-    "factory": "0x15f1D6729E526E9F99AF67c8f4d7Da7a40770dcC"
+    "tokenLinker": "0x2E19Fb927f17042BFf1d3066dE618E0F2027218c",
+    "remoteAddressValidator": "0x32Fcc0a13A8BE38caC293893BE0739040D17eed0"
   },
   {
     "name": "Fantom",
@@ -36,7 +38,8 @@
     "tokenName": "Fantom",
     "tokenSymbol": "FTM",
     "token": "0xe8014F32A38EB795BDa32E62a814bF788F42d693",
-    "factory": "0x15f1D6729E526E9F99AF67c8f4d7Da7a40770dcC"
+    "tokenLinker": "0x2E19Fb927f17042BFf1d3066dE618E0F2027218c",
+    "remoteAddressValidator": "0x32Fcc0a13A8BE38caC293893BE0739040D17eed0"
   },
   {
     "name": "Ethereum",
@@ -49,7 +52,8 @@
     "tokenName": "Ether",
     "tokenSymbol": "ETH",
     "token": "0xe8014F32A38EB795BDa32E62a814bF788F42d693",
-    "factory": "0x15f1D6729E526E9F99AF67c8f4d7Da7a40770dcC"
+    "tokenLinker": "0x2E19Fb927f17042BFf1d3066dE618E0F2027218c",
+    "remoteAddressValidator": "0x32Fcc0a13A8BE38caC293893BE0739040D17eed0"
   },
   {
     "name": "Polygon",
@@ -62,6 +66,7 @@
     "tokenName": "Matic",
     "tokenSymbol": "MATIC",
     "token": "0xe8014F32A38EB795BDa32E62a814bF788F42d693",
-    "factory": "0x15f1D6729E526E9F99AF67c8f4d7Da7a40770dcC"
+    "tokenLinker": "0x2E19Fb927f17042BFf1d3066dE618E0F2027218c",
+    "remoteAddressValidator": "0x32Fcc0a13A8BE38caC293893BE0739040D17eed0"
   }
 ]

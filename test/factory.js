@@ -1,135 +1,73 @@
 'use strict';
 
 const chai = require('chai');
-const { getDefaultProvider, Contract, Wallet } = require('ethers');
+const { getDefaultProvider, Contract, Wallet, ContractFactory, constants: {AddressZero} } = require('ethers');
 const { expect } = chai;
-const { keccak256, defaultAbiCoder } = require('ethers/lib/utils');
+const { keccak256, defaultAbiCoder, RLP, getContractAddress } = require('ethers/lib/utils');
 const { setJSON } = require('@axelar-network/axelar-local-dev/dist/utils');
-const { setupLocal, deploy, deployToken } = require("../scripts/factory");
 require('dotenv').config();
 
 const ERC20MintableBurnable = require('../artifacts/@axelar-network/axelar-gmp-sdk-solidity/contracts/test/ERC20MintableBurnable.sol/ERC20MintableBurnable.json');
-const ITokenLinkerFactory = require('../artifacts/contracts/interfaces/ITokenLinkerFactory.sol/ITokenLinkerFactory.json');
 const ITokenLinker = require('../artifacts/contracts/interfaces/ITokenLinker.sol/ITokenLinker.json');
-const IUpgradable = require('../artifacts/contracts/interfaces/IUpgradable.sol/IUpgradable.json');
 const IERC20 = require('../artifacts/contracts/interfaces/IERC20.sol/IERC20.json');
-const IImplementationLookup = require('../artifacts/contracts/interfaces/IImplementationLookup.sol/IImplementationLookup.json');
+const TokenLinker = require('../artifacts/contracts/TokenLinker.sol/TokenLinker.json');
 const TokenLinkerExecutableTest = require('../artifacts/contracts/test/TokenLinkerExecutableTest.sol/TokenLinkerExecutableTest.json');
+const UpgradableProxy = require('@axelar-network/axelar-gmp-sdk-solidity/artifacts/contracts/upgradables/Proxy.sol/Proxy.json');
+const RemoteAddressValidator = require('../artifacts/contracts/RemoteAddressValidator.sol/RemoteAddressValidator.json');
+const Deployer = require('../artifacts/contracts/Deployer.sol/Deployer.json');
 const { deployContract } = require('@axelar-network/axelar-gmp-sdk-solidity/scripts/utils');
+const { predictContractConstant, deployUpgradable, deployAndInitContractConstant } = require('@axelar-network/axelar-gmp-sdk-solidity');
+const { createAndExport } = require('@axelar-network/axelar-local-dev');
 
 let chains;
 let wallet;
 
-const tokenLinkerTypes = [
-    {
-        name: 'Lock/Unlock',
-        factoryRef: 'lockUnlock',
-        params: (chain) => defaultAbiCoder.encode(['address'], [chain.token]),
-        preSend: async (tokenLinkerAddress, amount, wallet) => {
-            const tokenLinker = new Contract(tokenLinkerAddress, ITokenLinker.abi, wallet);
-            const tokenAddress = await tokenLinker.token();
-            const token = new Contract(tokenAddress, ERC20MintableBurnable.abi, wallet);
-            await (await token.mint(wallet.address, amount)).wait();
-            await (await token.approve(tokenLinkerAddress, amount)).wait();
-        },
-        getBalance: async(tokenLinkerAddress, address, provider) => {
-            const tokenLinker = new Contract(tokenLinkerAddress, ITokenLinker.abi, provider);
-            const tokenAddress = await tokenLinker.token();
-            const token = new Contract(tokenAddress, ERC20MintableBurnable.abi, provider);
-            return await token.balanceOf(address);
-        },
-    },
-    {
-        name: 'Mint/Burn',
-        factoryRef: 'mintBurn',
-        params: (chain) => defaultAbiCoder.encode(['string', 'string', 'uint8'], ['Test Token', 'TT', 13]),
-        getBalance: async(tokenLinkerAddress, address, provider) => {
-            const tokenLinker = new Contract(tokenLinkerAddress, IERC20.abi, provider);
-            return await tokenLinker.balanceOf(address);
-        },
-    },
-    {
-        name: 'Mint/Burn External',
-        factoryRef: 'mintBurnExternal',
-        pre: async(chain, wallet) => {
-            const prevToken = chain.token;
-            await deployToken(chain, wallet);
-            chain.ownedToken = chain.token;
-            chain.token = prevToken;
-        },
-        params: async (chain) => {
-            const contract = new Contract(chain.ownedToken, ERC20MintableBurnable.abi);
-            let tx = await contract.populateTransaction.mint(wallet.address, 0);
-            const mintSelector = tx.data.substring(0, 10);
-            tx = await contract.populateTransaction.burn(wallet.address, 0);
-            const burnSelector = tx.data.substring(0, 10);
-            return defaultAbiCoder.encode(['address', 'bytes4', 'bytes4'], [contract.address, mintSelector, burnSelector]);
-        },
-        preSend: async (tokenLinkerAddress, amount, wallet) => {
-            const tokenLinker = new Contract(tokenLinkerAddress, ITokenLinker.abi, wallet);
-            const tokenAddress = await tokenLinker.token();
-            const token = new Contract(tokenAddress, IERC20.abi, wallet);
-            await (await token.approve(tokenLinkerAddress, amount)).wait();
-        },
-        getBalance: async(tokenLinkerAddress, address, provider) => {
-            const tokenLinker = new Contract(tokenLinkerAddress, ITokenLinker.abi, provider);
-            const tokenAddress = await tokenLinker.token();
-            const token = new Contract(tokenAddress, ERC20MintableBurnable.abi, provider);
-            return await token.balanceOf(address);
-        },
-    },
-    {
-        name: 'Native',
-        factoryRef: 'native',
-        params: (chain) => '0x',
-        value: true,
-        getBalance: async(tokenLinkerAddress, address, provider) => {
-            return BigInt(await provider.getBalance(address));
-        },
-    }
-];
+async function setupLocal(toFund) {
+    await createAndExport({
+        chainOutputPath: './info/local.json',
+        accountsToFund: toFund,
+        relayInterval: 100,
+    });
+}
 
-async function deployTokenLinker(chain, type, factoryManaged, key = type) {
+async function deployToken(chain, walletUnconnected) {
+    const provider = getDefaultProvider(chain.rpc);
+    const wallet = walletUnconnected.connect(provider);
+    const contract = await deployContract(wallet, ERC20MintableBurnable, ['Subnet Token', 'ST', 18]);
+    chain.token = contract.address;
+
+    return contract;
+}
+
+async function deployTokenLinker(chain) {
     const provider = getDefaultProvider(chain.rpc);
     const walletConnected = wallet.connect(provider);
-    const factory = new Contract(chain.factory, ITokenLinkerFactory.abi, walletConnected);
-    const tlt = tokenLinkerTypes[type];
-    if(tlt.pre) await tlt.pre(chain, walletConnected);
-    const params = await tlt.params(chain);
-    const salt = keccak256(defaultAbiCoder.encode(['string'], [key]));
-    await (await factory.deploy(
-        type,
-        salt,
-        params,
-        factoryManaged,
-    )).wait();
-    const id = await factory.getTokenLinkerId(wallet.address, salt);
-    const address = await factory.tokenLinker(id, factoryManaged);
-    return new Contract(address, ITokenLinker.abi, walletConnected);
-}
-
-async function sendToken(fromChain, toChain, id, factoryManaged, amount) {
-    const provider = getDefaultProvider(fromChain.rpc);
-    const walletConnected = wallet.connect(provider);
-    const factory = new Contract(fromChain.factory, ITokenLinkerFactory.abi, walletConnected);
-    const tokenLinkerAddress = await factory.tokenLinker(id, factoryManaged);
-    const type = await factory.tokenLinkerType(id);
-    const tlt = tokenLinkerTypes[type];
-    if(tlt.preSend) await tlt.preSend(tokenLinkerAddress, amount, walletConnected);
-    const tokenLinker = new Contract(tokenLinkerAddress, ITokenLinker.abi, walletConnected);
-    await (await tokenLinker.sendToken(toChain.name, wallet.address, amount, {value: tlt.value ? amount + 3e6 : 3e6})).wait();
-}
-
-async function sendTokenWithData(fromChain, toChain, id, factoryManaged, to, amount, data) {
-    const provider = getDefaultProvider(fromChain.rpc);
-    const walletConnected = wallet.connect(provider);
-    const factory = new Contract(fromChain.factory, ITokenLinkerFactory.abi, walletConnected);
-    const tokenLinkerAddress = await factory.tokenLinker(id, factoryManaged);
-    const type = await factory.tokenLinkerType(id);
-    const tlt = tokenLinkerTypes[type];
-    if(tlt.preSend) await tlt.preSend(tokenLinkerAddress, amount, walletConnected);
-    const tokenLinker = new Contract(tokenLinkerAddress, ITokenLinker.abi, walletConnected);
-    await (await tokenLinker.sendTokenWithData(toChain.name, to, amount, data, {value: tlt.value ? amount + 3e6 : 3e6})).wait();
+    const ravAddress = await predictContractConstant(chain.constAddressDeployer, walletConnected, UpgradableProxy, 'remoteAddressValidator', []);
+    
+    const deployerAddress = await predictContractConstant(chain.constAddressDeployer, walletConnected, Deployer, 'deployer');
+    const tlAddress = getContractAddress({from:deployerAddress, nonce:1});
+    const remoteAddressValidator = await deployUpgradable(
+        chain.constAddressDeployer,
+        walletConnected,
+        RemoteAddressValidator,
+        UpgradableProxy,
+        [tlAddress, [], []],
+        [],
+        [],
+        'remoteAddressValidator',
+    );
+    const contractFactory = new ContractFactory(TokenLinker.abi, TokenLinker.bytecode);
+    const bytecode = contractFactory.getDeployTransaction(chain.gateway, chain.gasReceiver, remoteAddressValidator.address, chain.name).data;
+    const deployer = await deployAndInitContractConstant(
+        chain.constAddressDeployer,
+        walletConnected,
+        Deployer,
+        'deployer',
+        [],
+        [bytecode],
+    );
+    chain.tokenLinker = tlAddress;
+    chain.remoteAddressValidator = remoteAddressValidator.address;
 }
 
 describe('Token Linker Factory', () => {
@@ -147,157 +85,129 @@ describe('Token Linker Factory', () => {
         chains = require('../info/local.json');
         for(const chain of chains) {
             await deployToken(chain, wallet)
-            await deploy(chain, wallet);
+            await deployTokenLinker(chain);
         }
         setJSON(chains, './info/local.json');
+        for(const chain of chains) {
+            const provider = getDefaultProvider(chain.rpc);
+            chain.walletConnected = wallet.connect(provider);
+            chain.tl = new Contract(chain.tokenLinker, ITokenLinker.abi, chain.walletConnected);
+            chain.rav = new Contract(chain.remoteAddressValidator, RemoteAddressValidator.abi, chain.walletConnected);
+            chain.tok = new Contract(chain.token, ERC20MintableBurnable.abi, chain.walletConnected);
+        }
     });
 
-    for(const factoryManaged of [true, false]) {
-        for(let i=0; i<4; i++) {
-            it(`Should deploy a ${factoryManaged ? 'Factory' : 'Self'} Managed ${tokenLinkerTypes[i].name} token linker`, async () => { 
-                const chain = chains[i];
-                const provider = getDefaultProvider(chain.rpc);
-                const walletConnected = wallet.connect(provider);
-                const factory = new Contract(chain.factory, ITokenLinkerFactory.abi, walletConnected);   
-                const tl = await deployTokenLinker(chain, i, factoryManaged);
-                const contract = new Contract(tl.address, IImplementationLookup.abi, walletConnected);
-                const impl = await contract.implementation();
-                const implFromFactory = await factory[factoryManaged ? 'factoryManagedImplementations' : 'upgradableImplementations'](i);
-                expect(impl).to.equal(implFromFactory);
-            });
-        }
-    }
-    for(let i=0; i<4; i++) {
-        it(`Should deploy and upgrade an Upgradable ${tokenLinkerTypes[i].name} token linker`, async () => { 
-            const chain = chains[i];
-            const provider = getDefaultProvider(chain.rpc);
-            const walletConnected = wallet.connect(provider);
-            const factory = new Contract(chain.factory, ITokenLinkerFactory.abi, walletConnected);   
-            const tl = await deployTokenLinker(chain, i, false, 'u' + i);
-            const contract = new Contract(tl.address, IImplementationLookup.abi, walletConnected);
-            const impl = await contract.implementation();
-            const implFromFactory = await factory.upgradableImplementations(i);
-            expect(impl).to.equal(implFromFactory);
+    it(`Should Register a Token`, async () => {
+        const origin = chains[0];
+        
+        await (await origin.tl.registerToken(origin.token)).wait();
+        const tokenId = await origin.tl.getNativeTokenId(origin.token);
+        const address = await origin.tl.getTokenAddress(tokenId);
+        expect(address).to.equal(origin.token);
+    });
+    it(`Should deploy a remote token`, async() => {
+        const origin = chains[0];
+        const destination = chains[1];
 
-
-            const j = (i+1)%4;
-            const newTlt = tokenLinkerTypes[j];
-            if(newTlt.pre) await newTlt.pre(chain, walletConnected);
-            const params = await newTlt.params(chain);
-            const implAddress = await factory.upgradableImplementations(j);
-            const upgradable = new Contract(tl.address, IUpgradable.abi, walletConnected);
-            await (await upgradable.upgrade(
-                implAddress,
-                params
-            )).wait();
-            expect(Number(await tl.implementationType())).to.equal(j);
+        const tokenId = await origin.tl.getNativeTokenId(origin.token);
+        const receipt = await (await origin.tl.deployRemoteTokens(tokenId, [destination.name], {value: 1e7})).wait();
+        await new Promise((resolve) => {
+            setTimeout(() => {
+                resolve();
+            }, 500);
         });
-    }
-    for(const factoryManaged of [true, false]) {
-        for(const source of [0, 3]) {
-            for(const destination of [1, 2]) {
-                const key = 'key' + source + destination;
-                const amountIn = 12345;
-                const amountOut = 1234;
-                it(`Should use a ${factoryManaged ? 'Factory' : 'Self'} Managed ${tokenLinkerTypes[source].name} and ${tokenLinkerTypes[destination].name} to bridge some assets.`, async () => {
-                    const sourceChain = chains[source];
-                    const destinationChain = chains[destination];
-                    const walletSource = wallet.connect(getDefaultProvider(sourceChain.rpc));
-                    const walletDestination = wallet.connect(getDefaultProvider(destinationChain.rpc));
-                    const sourceTokenLinker = await deployTokenLinker(sourceChain, source, factoryManaged, key);
-                    const destinationTokenLinker = await deployTokenLinker(destinationChain, destination, factoryManaged, key);
-                    const factory = new Contract(sourceChain.factory, ITokenLinkerFactory.abi, walletSource);  
-                    const length = await factory.numberDeployed();
-                    const id = await factory.tokenLinkerIds(length - 1);
-                    await sendToken(sourceChain, destinationChain, id, factoryManaged, amountIn);
+        expect(await destination.tl.getTokenAddress(tokenId)).to.not.equal(AddressZero);
+    });
+    it(`Should send some token from origin to destination`, async() => {
+        const origin = chains[0];
+        const destination = chains[1];
+        const amount = 1e6;
 
-                    let getBalance = tokenLinkerTypes[destination].getBalance;
+        await (await origin.tok.mint(wallet.address, amount)).wait();
+        await (await origin.tok.approve(origin.tl.address, amount)).wait();
 
-                    let balance = await getBalance(destinationTokenLinker.address, wallet.address, walletDestination.provider);
-                    await new Promise((resolve) => {
-                        setTimeout(() => {
-                            resolve();
-                        }, 400);
-                    });
-                    
-                    balance = await getBalance(destinationTokenLinker.address, wallet.address, walletDestination.provider) - balance;
-                    expect(BigInt(balance)).to.equal(BigInt(amountIn));
+        const tokenId = await origin.tl.getNativeTokenId(origin.token);
+        await (await origin.tl.sendToken(tokenId, destination.name, wallet.address, amount, {value: 1e6})).wait();
+        await new Promise((resolve) => {
+            setTimeout(() => {
+                resolve();
+            }, 500);
+        });
+        const tokenAddr = await destination.tl.getTokenAddress(tokenId)
+        const token = new Contract(tokenAddr, IERC20.abi, destination.walletConnected);
+        expect(Number(await token.balanceOf(wallet.address))).to.equal(amount);
+    });
+    it(`Should send some token back`, async() => {
+        const origin = chains[0];
+        const destination = chains[1];
+        const amount = 1e6;
 
-                    await sendToken(destinationChain, sourceChain, id, factoryManaged, amountOut);
-                    
-                    getBalance = tokenLinkerTypes[source].getBalance;
-                    balance = await getBalance(sourceTokenLinker.address, wallet.address, walletSource.provider);
-                    await new Promise((resolve) => {
-                        setTimeout(() => {
-                            resolve();
-                        }, 400);
-                    });
-                    balance = await getBalance(sourceTokenLinker.address, wallet.address, walletSource.provider) - balance;
-                    expect(BigInt(balance)).to.equal(BigInt(amountOut));
-                });
+        const tokenId = await origin.tl.getNativeTokenId(origin.token);
+        const tokenAddr = await destination.tl.getTokenAddress(tokenId)
+        const token = new Contract(tokenAddr, IERC20.abi, destination.walletConnected);
+        await (await token.approve(destination.tl.address, amount)).wait();
 
-                it(`Should use a ${factoryManaged ? 'Factory' : 'Self'} Managed ${tokenLinkerTypes[source].name} and ${tokenLinkerTypes[destination].name} to bridge some assets with data.`, async () => {
-                    const sourceChain = chains[source];
-                    const destinationChain = chains[destination];
-                    const walletSource = wallet.connect(getDefaultProvider(sourceChain.rpc));
-                    const walletDestination = wallet.connect(getDefaultProvider(destinationChain.rpc));
-                    const sourceTokenLinker = await deployTokenLinker(sourceChain, source, factoryManaged, key+'data');
-                    const destinationTokenLinker = await deployTokenLinker(destinationChain, destination, factoryManaged, key+'data');
-                    const destinationExecutable = await deployContract(walletDestination, TokenLinkerExecutableTest);
-                    const sourceExecutable = await deployContract(walletSource, TokenLinkerExecutableTest);
-                    const factory = new Contract(sourceChain.factory, ITokenLinkerFactory.abi, walletSource);  
-                    const length = await factory.numberDeployed();
-                    const id = await factory.tokenLinkerIds(length - 1);
-                    let val = key + 'out';
-                    let data = defaultAbiCoder.encode(['address', 'string'], [wallet.address, val]);
+        await (await destination.tl.sendToken(tokenId, origin.name, wallet.address, amount, {value: 1e6})).wait();
 
-                    await sendTokenWithData(
-                        sourceChain, 
-                        destinationChain, 
-                        id, 
-                        factoryManaged, 
-                        destinationExecutable.address, 
-                        amountIn, 
-                        data
-                    );
+        await new Promise((resolve) => {
+            setTimeout(() => {
+                resolve();
+            }, 500);
+        });
 
-                    let getBalance = tokenLinkerTypes[destination].getBalance;
+        expect(Number(await origin.tok.balanceOf(wallet.address))).to.equal(amount);
+    });
 
-                    let balance = await getBalance(destinationTokenLinker.address, wallet.address, walletDestination.provider);
-                    await new Promise((resolve) => {
-                        setTimeout(() => {
-                            resolve();
-                        }, 400);
-                    });
-                    balance = await getBalance(destinationTokenLinker.address, wallet.address, walletDestination.provider) - balance;
-                    expect(BigInt(balance)).to.equal(BigInt(amountIn));
-                    expect(await destinationExecutable.val()).to.equal(val);
+    it(`Should register a token and deploy a remote token in one go`, async() => {
+        const origin = chains[1];
+        const destination = chains[2];
 
-                    val = key + 'in'
-                    data = defaultAbiCoder.encode(['address', 'string'], [wallet.address, val]);
-                    await sendTokenWithData(
-                        destinationChain, 
-                        sourceChain, 
-                        id, 
-                        factoryManaged, 
-                        sourceExecutable.address,
-                        amountOut, 
-                        data
-                    );
-                    
-                    getBalance = tokenLinkerTypes[source].getBalance;
+        const receipt = await (await origin.tl.registerTokenAndDeployRemoteTokens(origin.token, [destination.name], {value: 1e7})).wait();
+        await new Promise((resolve) => {
+            setTimeout(() => {
+                resolve();
+            }, 500);
+        });
+        const tokenId = await origin.tl.getNativeTokenId(origin.token);
+        expect(await destination.tl.getTokenAddress(tokenId)).to.not.equal(AddressZero);
+    });
+    it(`Should send some token from origin to destination`, async() => {
+        const origin = chains[1];
+        const destination = chains[2];
+        const amount = 1e6;
 
-                    balance = await getBalance(sourceTokenLinker.address, wallet.address, walletSource.provider);
-                    await new Promise((resolve) => {
-                        setTimeout(() => {
-                            resolve();
-                        }, 400);
-                    });
-                    balance = await getBalance(sourceTokenLinker.address, wallet.address, walletSource.provider) - balance;
-                    expect(BigInt(balance)).to.equal(BigInt(amountOut));
-                    expect(await sourceExecutable.val()).to.equal(val);
-                });
-            }
-        }
-    }
+        await (await origin.tok.mint(wallet.address, amount)).wait();
+        await (await origin.tok.approve(origin.tl.address, amount)).wait();
+
+        const tokenId = await origin.tl.getNativeTokenId(origin.token);
+        await (await origin.tl.sendToken(tokenId, destination.name, wallet.address, amount, {value: 1e6})).wait();
+        await new Promise((resolve) => {
+            setTimeout(() => {
+                resolve();
+            }, 500);
+        });
+        const tokenAddr = await destination.tl.getTokenAddress(tokenId)
+        const token = new Contract(tokenAddr, IERC20.abi, destination.walletConnected);
+        expect(Number(await token.balanceOf(wallet.address))).to.equal(amount);
+    });
+    it(`Should send some token back`, async() => {
+        const origin = chains[1];
+        const destination = chains[2];
+        const amount = 1e6;
+
+        const tokenId = await origin.tl.getNativeTokenId(origin.token);
+        const tokenAddr = await destination.tl.getTokenAddress(tokenId)
+        const token = new Contract(tokenAddr, IERC20.abi, destination.walletConnected);
+        await (await token.approve(destination.tl.address, amount)).wait();
+
+        await (await destination.tl.sendToken(tokenId, origin.name, wallet.address, amount, {value: 1e6})).wait();
+
+        await new Promise((resolve) => {
+            setTimeout(() => {
+                resolve();
+            }, 500);
+        });
+        
+        expect(Number(await origin.tok.balanceOf(wallet.address))).to.equal(amount);
+    });
 })

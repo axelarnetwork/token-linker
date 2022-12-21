@@ -11,18 +11,11 @@ contract TokenLinkerExecutableTest is ITokenLinkerCallable {
     function processToken(
         address tokenAddress,
         string calldata,
-        address,
         uint256 amount,
         bytes calldata data
     ) external override {
         address to;
         (to, val) = abi.decode(data, (address, string));
-        if (tokenAddress == address(0)) {
-            to.call{ value: amount }('');
-        } else {
-            IERC20(tokenAddress).transfer(to, amount);
-        }
+        IERC20(tokenAddress).transfer(to, amount);
     }
-
-    receive() external payable {}
 }

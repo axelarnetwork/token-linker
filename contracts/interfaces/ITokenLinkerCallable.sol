@@ -7,7 +7,6 @@ interface ITokenLinkerCallable {
     function processToken(
         address tokenAddress,
         string calldata sourceChain,
-        address sourceAddress,
         uint256 amount,
         bytes calldata data
     ) external;
