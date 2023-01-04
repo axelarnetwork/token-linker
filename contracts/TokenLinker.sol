@@ -23,19 +23,21 @@ contract TokenLinker is ITokenLinker, AxelarExecutable {
     IRemoteAddressValidator public immutable remoteAddressValidator;
     // bytes32(uint256(keccak256('remote-address-validator')) - 1)
     bytes32 public constant contractId = bytes32(0);
-    mapping (bytes32 => bytes32) public tokenRegistry;
+    mapping(bytes32 => bytes32) public tokenRegistry;
     bytes32 public immutable chainNameHash;
     enum RemoteActions {
-        GIVE_TOKEN, GIVE_TOKEN_WITH_DATA, DEPLOY_TOKEN
+        GIVE_TOKEN,
+        GIVE_TOKEN_WITH_DATA,
+        DEPLOY_TOKEN
     }
 
     constructor(
-        address gatewayAddress_, 
-        address gasServiceAddress_, 
-        address remoteAddressValidatorAddress_, 
+        address gatewayAddress_,
+        address gasServiceAddress_,
+        address remoteAddressValidatorAddress_,
         string memory chainName
     ) AxelarExecutable(gatewayAddress_) {
-        if(gatewayAddress_ == address(0) || gasServiceAddress_ == address(0)) revert TokenLinkerZeroAddress();
+        if (gatewayAddress_ == address(0) || gasServiceAddress_ == address(0)) revert TokenLinkerZeroAddress();
         gasService = IAxelarGasService(gasServiceAddress_);
         remoteAddressValidator = IRemoteAddressValidator(remoteAddressValidatorAddress_);
         chainNameHash = keccak256(bytes(chainName));
@@ -55,41 +57,53 @@ contract TokenLinker is ITokenLinker, AxelarExecutable {
         tokenRegistry[tokenId] = LinkedTokenData.createTokenData(tokenAddress, true);
     }
 
-    function registerTokenAndDeployRemoteTokens(address tokenAddress, string[] calldata destinationChains) external payable override returns (bytes32 tokenId) {
+    function registerTokenAndDeployRemoteTokens(address tokenAddress, string[] calldata destinationChains)
+        external
+        payable
+        override
+        returns (bytes32 tokenId)
+    {
         tokenId = getNativeTokenId(tokenAddress);
         tokenRegistry[tokenId] = LinkedTokenData.createTokenData(tokenAddress, true);
         uint256 length = destinationChains.length;
         (string memory name, string memory symbol, uint8 decimals) = _validateNativeToken(tokenAddress);
-        for(uint256 i; i<length; ++i) {
+        for (uint256 i; i < length; ++i) {
             _deployRemoteToken(tokenId, name, symbol, decimals, destinationChains[i]);
         }
     }
 
     function deployRemoteTokens(bytes32 tokenId, string[] calldata destinationChains) external payable override {
         bytes32 tokenData = tokenRegistry[tokenId];
-        if(!tokenData.isNative()) revert NotNativeToken();
+        if (!tokenData.isNative()) revert NotNativeToken();
         address tokenAddress = tokenData.getAddress();
-        
+
         (string memory name, string memory symbol, uint8 decimals) = _validateNativeToken(tokenAddress);
 
         uint256 length = destinationChains.length;
-        for(uint256 i; i<length; ++i) {
+        for (uint256 i; i < length; ++i) {
             _deployRemoteToken(tokenId, name, symbol, decimals, destinationChains[i]);
         }
     }
 
     function _deployRemoteToken(
-        bytes32 tokenId, 
-        string memory name, 
-        string memory symbol, 
-        uint8 decimals, 
+        bytes32 tokenId,
+        string memory name,
+        string memory symbol,
+        uint8 decimals,
         string calldata destinationChain
     ) internal {
         bytes memory payload = abi.encode(RemoteActions.DEPLOY_TOKEN, tokenId, name, symbol, decimals);
         _sendPayload(destinationChain, payload);
     }
 
-    function _validateNativeToken(address tokenAddress) internal returns (string memory name, string memory symbol, uint8 decimals) {
+    function _validateNativeToken(address tokenAddress)
+        internal
+        returns (
+            string memory name,
+            string memory symbol,
+            uint8 decimals
+        )
+    {
         IERC20 token = IERC20(tokenAddress);
         name = token.name();
         symbol = token.symbol();
@@ -97,9 +111,9 @@ contract TokenLinker is ITokenLinker, AxelarExecutable {
     }
 
     function _deployToken(
-        bytes32 tokenId, 
-        string memory tokenName, 
-        string memory tokenSymbol, 
+        bytes32 tokenId,
+        string memory tokenName,
+        string memory tokenSymbol,
         uint8 decimals
     ) internal {
         address tokenAddress = address(new BurnableMintableCappedERC20(tokenName, tokenSymbol, decimals, 0));
@@ -131,14 +145,17 @@ contract TokenLinker is ITokenLinker, AxelarExecutable {
         _sendPayload(destinationChain, payload);
     }
 
-    function _sendPayload(
-        string calldata destinationChain,
-        bytes memory payload
-    ) internal {
+    function _sendPayload(string calldata destinationChain, bytes memory payload) internal {
         string memory destinationAddress = remoteAddressValidator.getRemoteAddress(destinationChain);
         uint256 gasValue = msg.value;
         if (gasValue > 0) {
-            gasService.payNativeGasForContractCall{ value: gasValue }(address(this), destinationChain, destinationAddress, payload, msg.sender);
+            gasService.payNativeGasForContractCall{ value: gasValue }(
+                address(this),
+                destinationChain,
+                destinationAddress,
+                payload,
+                msg.sender
+            );
         }
         gateway.callContract(destinationChain, destinationAddress, payload);
     }
@@ -150,20 +167,20 @@ contract TokenLinker is ITokenLinker, AxelarExecutable {
     ) internal override {
         if (!remoteAddressValidator.validateSender(sourceChain, sourceAddress)) return;
         RemoteActions action = abi.decode(payload, (RemoteActions));
-        if(action == RemoteActions.DEPLOY_TOKEN) {
+        if (action == RemoteActions.DEPLOY_TOKEN) {
             bytes32 tokenId;
             string memory tokenName;
             string memory tokenSymbol;
             uint8 decimals;
             (, tokenId, tokenName, tokenSymbol, decimals) = abi.decode(payload, (RemoteActions, bytes32, string, string, uint8));
             _deployToken(tokenId, tokenName, tokenSymbol, decimals);
-        } else if(action == RemoteActions.GIVE_TOKEN) {
+        } else if (action == RemoteActions.GIVE_TOKEN) {
             bytes32 tokenId;
             address to;
             uint256 amount;
             (, tokenId, to, amount) = abi.decode(payload, (RemoteActions, bytes32, address, uint256));
             _giveToken(tokenId, to, amount);
-        } else if(action == RemoteActions.GIVE_TOKEN_WITH_DATA) {
+        } else if (action == RemoteActions.GIVE_TOKEN_WITH_DATA) {
             bytes32 tokenId;
             address to;
             uint256 amount;
@@ -173,14 +190,22 @@ contract TokenLinker is ITokenLinker, AxelarExecutable {
         }
     }
 
-    function _transfer(address tokenAddress, address to, uint256 amount) internal {
+    function _transfer(
+        address tokenAddress,
+        address to,
+        uint256 amount
+    ) internal {
         (bool success, bytes memory returnData) = tokenAddress.call(abi.encodeWithSelector(IERC20.transfer.selector, to, amount));
         bool transferred = success && (returnData.length == uint256(0) || abi.decode(returnData, (bool)));
 
         if (!transferred || tokenAddress.code.length == 0) revert TransferFailed();
     }
 
-    function _transferFrom(address tokenAddress, address from, uint256 amount) internal {
+    function _transferFrom(
+        address tokenAddress,
+        address from,
+        uint256 amount
+    ) internal {
         (bool success, bytes memory returnData) = tokenAddress.call(
             abi.encodeWithSelector(IERC20.transferFrom.selector, from, address(this), amount)
         );
@@ -189,48 +214,64 @@ contract TokenLinker is ITokenLinker, AxelarExecutable {
         if (!transferred || tokenAddress.code.length == 0) revert TransferFromFailed();
     }
 
-    function _mint(address tokenAddress, address to, uint256 amount) internal {
-        (bool success,) = tokenAddress.call(abi.encodeWithSelector(IMintableCappedERC20.mint.selector, to, amount));
+    function _mint(
+        address tokenAddress,
+        address to,
+        uint256 amount
+    ) internal {
+        (bool success, ) = tokenAddress.call(abi.encodeWithSelector(IMintableCappedERC20.mint.selector, to, amount));
 
         if (!success || tokenAddress.code.length == 0) revert MintFailed();
     }
 
-    function _burn(address tokenAddress, address from, uint256 amount) internal {
-        (bool success,) = tokenAddress.call(
-            abi.encodeWithSelector(IBurnableMintableCappedERC20.burnFrom.selector, from, amount)
-        );
+    function _burn(
+        address tokenAddress,
+        address from,
+        uint256 amount
+    ) internal {
+        (bool success, ) = tokenAddress.call(abi.encodeWithSelector(IBurnableMintableCappedERC20.burnFrom.selector, from, amount));
 
         if (!success || tokenAddress.code.length == 0) revert BurnFailed();
     }
 
-    function _giveToken(bytes32 tokenId, address to, uint256 amount) internal {
+    function _giveToken(
+        bytes32 tokenId,
+        address to,
+        uint256 amount
+    ) internal {
         bytes32 tokenData = tokenRegistry[tokenId];
         address tokenAddress = tokenData.getAddress();
-        if(tokenData.isNative()) {
+        if (tokenData.isNative()) {
             _transfer(tokenAddress, to, amount);
         } else {
             _mint(tokenAddress, to, amount);
         }
     }
-    function _takeToken(bytes32 tokenId, address to, uint256 amount) internal {
+
+    function _takeToken(
+        bytes32 tokenId,
+        address to,
+        uint256 amount
+    ) internal {
         bytes32 tokenData = tokenRegistry[tokenId];
         address tokenAddress = tokenData.getAddress();
-        if(tokenData.isNative()) {
+        if (tokenData.isNative()) {
             _transferFrom(tokenAddress, to, amount);
         } else {
             _burn(tokenAddress, to, amount);
         }
     }
+
     function _giveTokenWithData(
-        bytes32 tokenId, 
+        bytes32 tokenId,
         address to,
-        uint256 amount, 
+        uint256 amount,
         string calldata sourceChain,
         bytes memory data
     ) internal {
         bytes32 tokenData = tokenRegistry[tokenId];
         address tokenAddress = tokenData.getAddress();
-        if(tokenData.isNative()) {
+        if (tokenData.isNative()) {
             _transfer(tokenAddress, to, amount);
         } else {
             _mint(tokenAddress, to, amount);

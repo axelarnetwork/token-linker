@@ -26,16 +26,17 @@ interface ITokenLinker {
         address indexed from,
         bytes data
     );
+
     function getTokenAddress(bytes32 tokenId) external view returns (address tokenAddress);
 
     function getNativeTokenId(address tokenAddress) external view returns (bytes32 tokenId);
 
     function registerToken(address tokenAddress) external returns (bytes32 tokenId);
 
-    function registerTokenAndDeployRemoteTokens(
-        address tokenAddress, 
-        string[] calldata destinationChains
-    ) external payable returns (bytes32 tokenId);
+    function registerTokenAndDeployRemoteTokens(address tokenAddress, string[] calldata destinationChains)
+        external
+        payable
+        returns (bytes32 tokenId);
 
     function deployRemoteTokens(bytes32 tokenId, string[] calldata destinationChains) external payable;
 
